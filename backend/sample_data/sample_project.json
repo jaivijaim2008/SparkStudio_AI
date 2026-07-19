@@ -1,0 +1,110 @@
+{
+  "project_id": "demo-1234-5678",
+  "input": {
+    "topic": "AI replacing programmers",
+    "platform": "YouTube Shorts",
+    "audience": "Students",
+    "tone": "Funny",
+    "language": "English",
+    "video_length": 60
+  },
+  "research": {
+    "trends": ["Devin AI memes", "Software engineering is dead panic"],
+    "audience_analysis": "Stressed computer science students worried about their future.",
+    "viral_angles": ["AI writes buggy code", "The real job is just prompting now"],
+    "hooks": ["Are you a CS major? Your degree might be useless.", "AI just stole my job."],
+    "pain_points": ["Fear of unemployment", "Imposter syndrome"],
+    "faqs": ["Will AI replace coders?", "Should I still learn Python?"],
+    "interesting_facts": ["AI still can't center a div."]
+  },
+  "script": {
+    "hook": "So you're a CS major? Bad news, AI just stole your job.",
+    "sections": [
+      {
+        "label": "Hook",
+        "time_range": "0:00-0:05",
+        "content": "So you're a CS major? Bad news, AI just stole your job.",
+        "duration_seconds": 5
+      },
+      {
+        "label": "Problem",
+        "time_range": "0:05-0:20",
+        "content": "Just kidding. But seriously, everyone is panicking about Devin and GPT-4 writing code. You're probably wondering if you should drop out and become a plumber.",
+        "duration_seconds": 15
+      },
+      {
+        "label": "Solution",
+        "time_range": "0:20-0:50",
+        "content": "Here's the truth: AI is great at writing boilerplates, but it still hallucinates APIs that don't exist. Your new job isn't writing syntax, it's debugging AI hallucinations. You're basically an AI babysitter now.",
+        "duration_seconds": 30
+      },
+      {
+        "label": "CTA",
+        "time_range": "0:50-1:00",
+        "content": "Hit subscribe if you're ready to embrace your new life as a professional prompt engineer.",
+        "duration_seconds": 10
+      }
+    ],
+    "full_script": "So you're a CS major? Bad news, AI just stole your job. Just kidding. But seriously, everyone is panicking about Devin and GPT-4 writing code. You're probably wondering if you should drop out and become a plumber. Here's the truth: AI is great at writing boilerplates, but it still hallucinates APIs that don't exist. Your new job isn't writing syntax, it's debugging AI hallucinations. You're basically an AI babysitter now. Hit subscribe if you're ready to embrace your new life as a professional prompt engineer.",
+    "word_count": 89,
+    "estimated_duration": 60
+  },
+  "storyboard": {
+    "scenes": [
+      {
+        "scene_number": 1,
+        "duration": "5s",
+        "camera_angle": "Selfie style",
+        "animation": "Text pop-up 'CS MAJOR?'",
+        "background": "Messy dorm room",
+        "emotion": "Panic",
+        "visual_description": "Creator looks stressed holding a laptop",
+        "image_prompt": "Stressed college student looking at glowing laptop screen, dark room, cinematic lighting",
+        "broll_suggestions": ["Typing frantically on keyboard"],
+        "transition": "glitch"
+      }
+    ],
+    "total_duration": "60s"
+  },
+  "thumbnail": {
+    "text": "RIP CODING?",
+    "clickbait_score": 92,
+    "emotion": "Shock",
+    "color_suggestions": ["Neon Red", "Black"],
+    "layout": "Creator face on right (shocked), robot typing on left",
+    "image_prompt": "Futuristic robot sitting at a desk aggressively typing on a mechanical keyboard, neon red backlighting, high contrast"
+  },
+  "seo": {
+    "title": "Will AI Replace Programmers? (The Truth)",
+    "description": "Are you a CS major worried about AI taking your job? Here is what you need to know about Devin, GPT-4, and the future of software engineering.",
+    "keywords": ["AI replacing programmers", "Devin AI", "CS major", "Software engineering"],
+    "tags": ["AI", "Programming", "Tech", "Career"],
+    "hashtags": ["#AI", "#Coding", "#CSMajor", "#TechCareer"],
+    "best_upload_time": "Thursday 4PM EST"
+  },
+  "subtitles": {
+    "srt_content": "1\n00:00:00,000 --> 00:00:05,000\nSo you're a CS major? Bad news, AI just stole your job.\n",
+    "vtt_content": "WEBVTT\n\n00:00:00.000 --> 00:00:05.000\nSo you're a CS major? Bad news, AI just stole your job.",
+    "entries": []
+  },
+  "voice": {
+    "narration_script": "So you're a CS major? Bad news, AI just stole your job...",
+    "speaking_speed": "Fast",
+    "pauses": ["After 'job'"],
+    "emotion_directions": ["Start sarcastic", "End reassuring"],
+    "pronunciation_guide": {"CS": "C-S"}
+  },
+  "quality": {
+    "overall_score": 95,
+    "metrics": [
+      {
+        "name": "Hook Strength",
+        "score": 98,
+        "details": "Addresses the target audience immediately."
+      }
+    ],
+    "suggestions": ["Add robot sound effects"],
+    "improvements": []
+  },
+  "created_at": "2026-07-19T10:00:00Z"
+}
