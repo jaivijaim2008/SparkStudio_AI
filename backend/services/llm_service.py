@@ -58,6 +58,9 @@ class LLMService:
         else:
             self._groq_rotator = None
             logger.info("LLMService initialised — provider=%s  model=%s", self._provider, self._model)
+        
+        # Shared connection timeout watchdog: fail quickly on connection issues (5s connect timeout), 90s response timeout
+        self.timeout = httpx.Timeout(90.0, connect=5.0)
 
     # ── Public API ──────────────────────────────────────────────────────
 
@@ -151,7 +154,7 @@ class LLMService:
             payload["system"] = system_prompt
 
         logger.debug("Ollama request → %s  model=%s  prompt_len=%d", url, self._model, len(prompt))
-        response = await self._client.post(url, json=payload, timeout=120.0)
+        response = await self._client.post(url, json=payload, timeout=self.timeout)
         response.raise_for_status()
 
         data = response.json()
@@ -185,7 +188,7 @@ class LLMService:
         }
 
         logger.debug("OpenAI request → model=%s  messages=%d", payload["model"], len(messages))
-        response = await self._client.post(url, json=payload, headers=headers, timeout=90.0)
+        response = await self._client.post(url, json=payload, headers=headers, timeout=self.timeout)
         response.raise_for_status()
 
         data = response.json()
@@ -221,7 +224,7 @@ class LLMService:
         }
 
         logger.debug("Gemini request → model=%s", model_id)
-        response = await self._client.post(url, json=payload, timeout=90.0)
+        response = await self._client.post(url, json=payload, timeout=self.timeout)
         response.raise_for_status()
 
         data = response.json()
@@ -265,7 +268,7 @@ class LLMService:
             }
             logger.debug("Groq request → model=%s key=...%s", model_name, api_key[-8:])
             try:
-                response = await self._client.post(url, json=payload, headers=headers, timeout=90.0)
+                response = await self._client.post(url, json=payload, headers=headers, timeout=self.timeout)
                 if response.status_code == 429:
                     retry_after = float(response.headers.get("retry-after", 60))
                     await self._groq_rotator.mark_rate_limited(api_key, retry_after)
@@ -314,7 +317,7 @@ class LLMService:
         }
 
         logger.debug("OpenRouter request → model=%s  messages=%d", self._model, len(messages))
-        response = await self._client.post(url, json=payload, headers=headers, timeout=120.0)
+        response = await self._client.post(url, json=payload, headers=headers, timeout=self.timeout)
         response.raise_for_status()
 
         data = response.json()
