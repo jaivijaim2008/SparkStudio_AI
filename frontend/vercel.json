@@ -4,8 +4,5 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "outputDirectory": ".next",
-  "regions": ["iad1"],
-  "env": {
-    "NEXT_PUBLIC_API_URL": "http://localhost:8000"
-  }
+  "regions": ["iad1"]
 }
