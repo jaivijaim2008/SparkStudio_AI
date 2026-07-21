@@ -16,7 +16,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "CreatorPilot AI | One Prompt. Complete Content Production.",
+  title: "SparkStudio AI | One Prompt. Complete Content Production.",
   description: "A multi-agent AI copilot that converts a single user idea into a complete creator package.",
 };
 

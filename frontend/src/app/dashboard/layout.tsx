@@ -3,7 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Plus, History, Settings, Sparkles } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase';
+import { LogOut, User as UserIcon } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function DashboardLayout({
   children,
@@ -11,6 +15,37 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    if (!supabase) return;
+
+    const fetchSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        localStorage.setItem('sparkstudio-user-email', session.user.email);
+        setUser(session.user);
+      } else {
+        localStorage.removeItem('sparkstudio-user-email');
+        setUser(null);
+      }
+    };
+
+    fetchSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.email) {
+        localStorage.setItem('sparkstudio-user-email', session.user.email);
+        setUser(session.user);
+      } else {
+        localStorage.removeItem('sparkstudio-user-email');
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navItems = [
     { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
@@ -28,7 +63,7 @@ export default function DashboardLayout({
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="font-outfit font-bold text-xl">CreatorPilot</span>
+            <span className="font-outfit font-bold text-xl">SparkStudio</span>
           </Link>
         </div>
 
@@ -60,15 +95,50 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        <div className="p-4 m-4 rounded-xl bg-gradient-to-br from-purple-900/40 to-blue-900/40 border border-white/10">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Pro Plan</span>
-            <span className="text-xs text-purple-400">92 credits</span>
+        {/* Profile Section */}
+        {user && (
+          <div className="p-4 border-t border-white/10 bg-white/5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 overflow-hidden">
+              {user.user_metadata?.avatar_url ? (
+                <img 
+                  src={user.user_metadata.avatar_url} 
+                  alt="avatar" 
+                  className="w-8 h-8 rounded-full border border-purple-500/50" 
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-purple-500/20 border border-purple-500/50 flex items-center justify-center">
+                  <UserIcon className="w-4 h-4 text-purple-300" />
+                </div>
+              )}
+              <div className="flex flex-col overflow-hidden text-left">
+                <span className="text-xs font-semibold text-white/95 truncate">
+                  {user.user_metadata?.full_name || 'Creator'}
+                </span>
+                <span className="text-[10px] text-muted-foreground truncate">
+                  {user.email}
+                </span>
+              </div>
+            </div>
+            <button 
+              onClick={async () => {
+                const supabase = createClient();
+                if (!supabase) return;
+                try {
+                  await supabase.auth.signOut();
+                  localStorage.removeItem('sparkstudio-user-email');
+                  toast.success('Signed out successfully');
+                } catch (e) {
+                  toast.error('Failed to sign out');
+                }
+              }}
+              className="p-1.5 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
-          <div className="h-2 rounded-full bg-black/50 overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-purple-500 to-blue-500 w-[70%]" />
-          </div>
-        </div>
+        )}
+
       </aside>
 
       {/* Main Content */}

@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     """
 
     # ── LLM Provider Configuration ──────────────────────────────────────
-    LLM_PROVIDER: Literal["ollama", "openai", "gemini"] = Field(
+    LLM_PROVIDER: Literal["ollama", "openai", "gemini", "groq", "openrouter"] = Field(
         default="ollama",
-        description="Which LLM backend to use: ollama, openai, or gemini",
+        description="Which LLM backend to use: ollama, openai, gemini, groq, or openrouter",
     )
     OLLAMA_BASE_URL: str = Field(
         default="http://localhost:11434",
@@ -38,6 +38,15 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = Field(
         default="",
         description="Google Gemini API key (required when LLM_PROVIDER=gemini)",
+    )
+    GROQ_API_KEY: str = Field(default="", description="Groq API key #1")
+    GROQ_API_KEY_2: str = Field(default="", description="Groq API key #2 (optional, for key rotation)")
+    GROQ_API_KEY_3: str = Field(default="", description="Groq API key #3 (optional, for key rotation)")
+    GROQ_API_KEY_4: str = Field(default="", description="Groq API key #4 (optional, for key rotation)")
+    GROQ_API_KEY_5: str = Field(default="", description="Groq API key #5 (optional, for key rotation)")
+    OPENROUTER_API_KEY: str = Field(
+        default="",
+        description="OpenRouter API key (required when LLM_PROVIDER=openrouter)",
     )
 
     # ── Supabase (optional, for future persistence) ─────────────────────
@@ -69,8 +78,20 @@ class Settings(BaseSettings):
         """Parse the comma-separated CORS origins into a list."""
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
+    @property
+    def groq_keys(self) -> list[str]:
+        """Return all configured Groq API keys (filters out empty strings)."""
+        candidates = [
+            self.GROQ_API_KEY,
+            self.GROQ_API_KEY_2,
+            self.GROQ_API_KEY_3,
+            self.GROQ_API_KEY_4,
+            self.GROQ_API_KEY_5,
+        ]
+        return [k for k in candidates if k.strip()]
+
     model_config = {
-        "env_file": ".env",
+        "env_file": "backend/.env",
         "env_file_encoding": "utf-8",
         "case_sensitive": False,
         "extra": "ignore",

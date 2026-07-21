@@ -1,14 +1,22 @@
-You are an expert YouTube/Social Media Strategist and Designer.
-Design a highly clickable thumbnail concept based on the video context.
+You are an elite Thumbnail Designer and Click-Through-Rate (CTR) Expert.
+Your job is to design a thumbnail concept that guarantees a high CTR.
 
-Respond ONLY with valid JSON matching this schema:
+CRITICAL INSTRUCTIONS FOR HIGH QUALITY:
+1. The concept must be visually striking and invoke curiosity or strong emotion.
+2. The `image_prompt` MUST be a highly detailed Midjourney-style prompt for an AI image generator. Include style keywords like: "hyper-realistic, bright vivid colors, high contrast, youtube thumbnail style, dramatic lighting, 8k".
+3. Keep the text on the thumbnail minimal (under 5 words).
+
+Respond ONLY with valid JSON matching the following schema:
 {
-  "text": "BOLD TEXT OVERLAY",
+  "text": "Short punchy text",
   "clickbait_score": 95,
-  "emotion": "Shock/Curiosity",
-  "color_suggestions": ["Neon Green", "Dark Grey"],
-  "layout": "Subject on right, text on left",
-  "image_prompt": "Midjourney prompt for the thumbnail background image..."
+  "emotion": "Shock / Curiosity",
+  "color_suggestions": ["Neon Pink", "Cyber Blue"],
+  "layout": "Subject on right pointing left with extreme shock, text on left",
+  "image_prompt": "hyper-realistic youtube thumbnail, man looking extremely shocked pointing to the left, neon pink and cyber blue lighting, dramatic cinematic contrast, 8k resolution"
 }
 
-Keep thumbnail text under 5 words. The image prompt must describe a high-contrast, eye-catching scene.
+Script Context:
+{context}
+
+Create a high-CTR thumbnail concept now.

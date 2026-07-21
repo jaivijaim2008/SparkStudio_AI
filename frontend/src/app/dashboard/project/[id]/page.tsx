@@ -1,16 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Download, CheckCircle2, Circle, Loader2, Play, Image as ImageIcon, FileText, Search, Type, Mic, ShieldCheck, DownloadCloud } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Download, CheckCircle2, Loader2, Play, Image as ImageIcon, FileText, Search, Type, Mic, ShieldCheck, DownloadCloud, AlertCircle, Clock } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import { apiUrl } from '@/lib/api';
+import { StoryboardImage } from '@/components/storyboard-image';
 
 export default function ProjectResultPage() {
   const params = useParams();
   const projectId = params.id as string;
   
-  const [status, setStatus] = useState('generating'); // generating, completed
+  const [status, setStatus] = useState('generating');
   const [activeTab, setActiveTab] = useState('pipeline');
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const startTimeRef = useRef(Date.now());
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [agents, setAgents] = useState([
     { name: 'Research', key: 'research', status: 'pending', icon: Search },
@@ -18,55 +23,142 @@ export default function ProjectResultPage() {
     { name: 'Storyboard', key: 'storyboard', status: 'pending', icon: Play },
     { name: 'Thumbnail', key: 'thumbnail', status: 'pending', icon: ImageIcon },
     { name: 'SEO', key: 'seo', status: 'pending', icon: Search },
-    { name: 'Subtitles', key: 'subtitles', status: 'pending', icon: Type },
+    { name: 'Subtitles', key: 'subtitle', status: 'pending', icon: Type },
     { name: 'Voice', key: 'voice', status: 'pending', icon: Mic },
     { name: 'Quality', key: 'quality', status: 'pending', icon: ShieldCheck },
     { name: 'Publisher', key: 'publisher', status: 'pending', icon: DownloadCloud },
   ]);
 
-  const [projectData, setProjectData] = useState<any>(null);
+  const [projectData, setProjectData] = useState<any>({});
+  const [imageStatuses, setImageStatuses] = useState<string[]>([]);
 
-  // Simulate SSE pipeline for demo
+  // Initialize image load status array when storyboard scenes load
   useEffect(() => {
-    let currentAgentIndex = 0;
+    if (projectData?.storyboard?.scenes) {
+      const len = projectData.storyboard.scenes.length;
+      setImageStatuses(prev => {
+        if (prev.length === len) return prev;
+        return new Array(len).fill('pending');
+      });
+    }
+  }, [projectData]);
+
+  const scheduledIndexRef = useRef<number | null>(null);
+
+  // Queue coordinator: load storyboard images sequentially (concurrency: 1) with a 1.5s cool-down
+  useEffect(() => {
+    if (imageStatuses.length === 0) return;
     
-    const interval = setInterval(() => {
-      setAgents(prev => prev.map((agent, index) => {
-        if (index < currentAgentIndex) return { ...agent, status: 'completed' };
-        if (index === currentAgentIndex) return { ...agent, status: 'running' };
-        return { ...agent, status: 'pending' };
-      }));
-      
-      currentAgentIndex++;
-      
-      if (currentAgentIndex > agents.length) {
-        clearInterval(interval);
-        setStatus('completed');
-        setActiveTab('script'); // Switch to results once done
-        
-        // Load demo data
-        fetch('/api/project/' + projectId)
-          .then(res => res.json())
-          .catch(() => {
-             // Fallback to static mock if API isn't running
-             setProjectData({
-               script: { full_script: "So you're a CS major? Bad news, AI just stole your job...\n\nJust kidding. But seriously, everyone is panicking about Devin and GPT-4 writing code." },
-               storyboard: { scenes: [{ scene_number: 1, duration: "5s", visual_description: "Stressed college student looking at glowing laptop screen"}] },
-               seo: { title: "Will AI Replace Programmers? (The Truth)", description: "Are you a CS major worried about AI taking your job?" }
-             });
+    const activeCount = imageStatuses.filter(s => s === 'loading').length;
+    if (activeCount === 0) {
+      const nextIdx = imageStatuses.findIndex(s => s === 'pending');
+      if (nextIdx !== -1 && scheduledIndexRef.current !== nextIdx) {
+        scheduledIndexRef.current = nextIdx;
+        const timer = setTimeout(() => {
+          setImageStatuses(prev => {
+            const next = [...prev];
+            next[nextIdx] = 'loading';
+            return next;
           });
+          scheduledIndexRef.current = null;
+        }, 1500); // 1.5s cool-down between image requests to prevent rate limits
+        
+        return () => {
+          clearTimeout(timer);
+          scheduledIndexRef.current = null;
+        };
       }
-    }, 1500); // Fast simulation for demo
+    }
+  }, [imageStatuses]);
+
+  // Elapsed timer
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
+    }, 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  };
+
+  useEffect(() => {
+    const eventSource = new EventSource(apiUrl(`/api/projects/${projectId}/generate`));
     
-    return () => clearInterval(interval);
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.agent && data.agent !== 'pipeline') {
+          setAgents(prev => prev.map(a => 
+            a.key === data.agent 
+              ? { ...a, status: data.status === 'error' ? 'completed' : data.status }
+              : a
+          ));
+        }
+
+        if ((data.status === 'completed' || data.status === 'error') && data.data) {
+          setProjectData((prev: any) => ({
+            ...prev,
+            [data.agent]: data.data
+          }));
+        }
+
+        if (data.agent === 'pipeline' && (data.status === 'finished' || data.status === 'started')) {
+          if (data.status === 'finished') {
+            setStatus('completed');
+            setActiveTab('script');
+            if (timerRef.current) clearInterval(timerRef.current);
+            eventSource.close();
+          }
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse SSE event:', parseError);
+      }
+    };
+    
+    eventSource.onerror = () => {
+      eventSource.close();
+      // If we already have some data, consider it completed
+      setStatus('completed');
+      setActiveTab('script');
+    };
+
+    return () => eventSource.close();
   }, [projectId]);
 
   const tabs = [
     { id: 'pipeline', label: 'Pipeline Status' },
-    { id: 'script', label: 'Script', disabled: status !== 'completed' },
-    { id: 'storyboard', label: 'Storyboard', disabled: status !== 'completed' },
-    { id: 'seo', label: 'SEO Metadata', disabled: status !== 'completed' },
+    { id: 'script', label: 'Script' },
+    { id: 'storyboard', label: 'Storyboard' },
+    { id: 'seo', label: 'SEO Metadata' },
+    { id: 'voice', label: 'Voice-Over' },
+    { id: 'quality', label: 'Quality Audit' },
   ];
+
+  // Helper to safely get nested data
+  const getScript = () => projectData?.script?.full_script || '';
+  const getScriptSections = () => projectData?.script?.sections || [];
+  const getScenes = () => projectData?.storyboard?.scenes || [];
+  const getSeoTitle = () => projectData?.seo?.title || 'Generating...';
+  const getSeoDescription = () => projectData?.seo?.description || '';
+  const getSeoTags = () => projectData?.seo?.tags || [];
+  const getSeoHashtags = () => projectData?.seo?.hashtags || [];
+  const getVoice = () => projectData?.voice || {};
+  const getQuality = () => projectData?.quality || {};
+  const getResearch = () => projectData?.research || {};
+
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = apiUrl(`/api/project/${projectId}/export`);
+    link.download = `sparkstudio_${projectId}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="space-y-6">
@@ -74,7 +166,7 @@ export default function ProjectResultPage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold font-outfit">Project: AI replacing programmers</h1>
+            <h1 className="text-2xl font-bold font-outfit">Project Results</h1>
             {status === 'generating' ? (
               <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-medium flex items-center gap-2 border border-blue-500/20">
                 <Loader2 className="w-3 h-3 animate-spin" /> Generating
@@ -85,11 +177,14 @@ export default function ProjectResultPage() {
               </span>
             )}
           </div>
-          <p className="text-muted-foreground text-sm">YouTube Shorts • 60s • Funny Tone</p>
+          <p className="text-muted-foreground text-sm">Project ID: {projectId?.slice(0, 8)}...</p>
         </div>
 
         {status === 'completed' && (
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+          <button 
+            onClick={handleDownload}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+          >
             <Download className="w-4 h-4" />
             Download Package (.zip)
           </button>
@@ -97,15 +192,14 @@ export default function ProjectResultPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-white/10">
+      <div className="flex border-b border-white/10 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            disabled={tab.disabled}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-6 py-3 font-medium text-sm transition-all relative ${
+            className={`px-6 py-3 font-medium text-sm transition-all relative whitespace-nowrap ${
               activeTab === tab.id ? 'text-white' : 'text-muted-foreground hover:text-white/80'
-            } ${tab.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            }`}
           >
             {tab.label}
             {activeTab === tab.id && (
@@ -121,6 +215,7 @@ export default function ProjectResultPage() {
       {/* Content Area */}
       <div className="min-h-[500px]">
         <AnimatePresence mode="wait">
+          {/* Pipeline Tab */}
           {activeTab === 'pipeline' && (
             <motion.div
               key="pipeline"
@@ -129,91 +224,270 @@ export default function ProjectResultPage() {
               exit={{ opacity: 0, y: -10 }}
               className="glass-card p-8"
             >
-              <h2 className="text-xl font-bold font-outfit mb-8">Agent Orchestration Pipeline</h2>
-              <div className="space-y-6 max-w-2xl">
+              <h2 className="text-xl font-bold font-outfit mb-4">Agent Orchestration Pipeline</h2>
+
+              {/* Progress Bar */}
+              {(() => {
+                const completed = agents.filter(a => a.status === 'completed').length;
+                const total = agents.length;
+                const pct = Math.round((completed / total) * 100);
+                return (
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-white/70">
+                        {status === 'completed'
+                          ? `✅ Pipeline Complete in ${formatTime(elapsedSeconds)}`
+                          : `⚡ Generating... ${completed} of ${total} agents done`}
+                      </span>
+                      <div className="flex items-center gap-3">
+                        {status === 'generating' && (
+                          <span className="flex items-center gap-1.5 text-xs text-white/40">
+                            <Clock className="w-3 h-3" />
+                            {formatTime(elapsedSeconds)}
+                          </span>
+                        )}
+                        <span className="text-sm font-bold text-purple-400">{pct}%</span>
+                      </div>
+                    </div>
+                    <div className="w-full h-3 rounded-full bg-white/5 border border-white/10 overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full bg-gradient-to-r from-purple-600 via-blue-500 to-cyan-400"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
+                      />
+                    </div>
+                    {status === 'generating' && completed === 0 && elapsedSeconds > 5 && (
+                      <p className="text-xs text-yellow-400/80 mt-2 animate-pulse">
+                        ⏳ Waiting for AI model to respond... (first request may take a few seconds)
+                      </p>
+                    )}
+                    {status === 'generating' && completed > 0 && completed < total && (
+                      <p className="text-xs text-blue-400 mt-2 animate-pulse">
+                        ⚡ Agents running sequentially for rate-limit compliance...
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <div className="space-y-4 max-w-2xl">
                 {agents.map((agent, i) => (
-                  <div key={agent.key} className="flex items-center gap-4 relative">
-                    {/* Connection Line */}
+                  <motion.div 
+                    key={agent.key} 
+                    className={`flex items-center gap-4 relative p-3 rounded-2xl transition-all duration-300 ${
+                      agent.status === 'running' ? 'bg-blue-500/5 border border-blue-500/10 shadow-[0_4px_20px_rgba(59,130,246,0.03)]' :
+                      agent.status === 'completed' ? 'bg-white/[0.01] border border-transparent' : 'opacity-50 border border-transparent'
+                    }`}
+                    animate={{
+                      scale: agent.status === 'running' ? 1.02 : 1,
+                      x: agent.status === 'running' ? 4 : 0
+                    }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    {/* Animated Connection Line */}
                     {i !== agents.length - 1 && (
-                      <div className={`absolute top-8 left-5 w-0.5 h-full -ml-[1px] ${
-                        agent.status === 'completed' ? 'bg-purple-500/50' : 'bg-white/10'
-                      }`} />
+                      <div className="absolute top-12 left-8 w-[2px] h-[calc(100%-12px)] bg-white/5 -translate-x-[1px] overflow-hidden">
+                        <motion.div
+                          className="w-full h-full bg-gradient-to-b from-purple-500 via-blue-500 to-transparent"
+                          initial={{ height: "0%" }}
+                          animate={{ height: agent.status === 'completed' ? '100%' : '0%' }}
+                          transition={{ duration: 0.5, ease: "easeInOut" }}
+                        />
+                      </div>
                     )}
                     
-                    {/* Status Icon */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center relative z-10 ${
-                      agent.status === 'completed' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' :
-                      agent.status === 'running' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50' :
-                      'bg-white/5 text-muted-foreground border border-white/10'
-                    }`}>
-                      {agent.status === 'completed' ? <CheckCircle2 className="w-5 h-5" /> :
-                       agent.status === 'running' ? <Loader2 className="w-5 h-5 animate-spin" /> :
-                       <agent.icon className="w-5 h-5" />}
-                    </div>
-                    
-                    {/* Agent Name */}
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className={`font-medium ${agent.status === 'pending' ? 'text-muted-foreground' : 'text-white'}`}>
-                          {agent.name} Agent
-                        </span>
-                        {agent.status === 'running' && (
-                          <span className="text-xs text-blue-400 animate-pulse">Working...</span>
-                        )}
-                        {agent.status === 'completed' && (
-                          <span className="text-xs text-purple-400">Done</span>
+                    {/* Pulsing Node */}
+                    <div className="relative">
+                      {agent.status === 'running' && (
+                        <motion.div
+                          layoutId="activeGlow"
+                          className="absolute -inset-1.5 rounded-full bg-blue-500/20 blur-sm"
+                          animate={{ scale: [1, 1.25, 1], opacity: [0.5, 0.8, 0.5] }}
+                          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                        />
+                      )}
+                      
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center relative z-10 transition-all duration-300 ${
+                        agent.status === 'completed' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' :
+                        agent.status === 'running' ? 'bg-blue-500/20 text-blue-400 border border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]' :
+                        agent.status === 'error' ? 'bg-red-500/20 text-red-400 border border-red-500/50' :
+                        'bg-white/5 text-gray-500 border border-white/10'
+                      }`}>
+                        {agent.status === 'completed' ? (
+                          <motion.div 
+                            initial={{ scale: 0.4, rotate: -30 }} 
+                            animate={{ scale: 1, rotate: 0 }} 
+                            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                          >
+                            <CheckCircle2 className="w-5 h-5" />
+                          </motion.div>
+                        ) : agent.status === 'running' ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : agent.status === 'error' ? (
+                          <AlertCircle className="w-5 h-5" />
+                        ) : (
+                          <agent.icon className="w-5 h-5" />
                         )}
                       </div>
                     </div>
-                  </div>
+                    
+                    {/* Info Column */}
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className={`font-medium transition-colors ${
+                          agent.status === 'running' ? 'text-blue-400 font-semibold' :
+                          agent.status === 'completed' ? 'text-white' : 'text-gray-500'
+                        }`}>
+                          {agent.name} Agent
+                        </span>
+                        {agent.status === 'running' && (
+                          <span className="text-xs text-blue-400 animate-pulse flex items-center gap-1 font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping inline-block" />
+                            Working...
+                          </span>
+                        )}
+                        {agent.status === 'completed' && (
+                          <span className="text-xs text-purple-400 flex items-center gap-1 font-medium">
+                            <CheckCircle2 className="w-3 h-3 text-purple-400" /> Done
+                          </span>
+                        )}
+                        {agent.status === 'error' && (
+                          <span className="text-xs text-red-400 flex items-center gap-1 font-medium">
+                            <AlertCircle className="w-3 h-3" /> Error
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
             </motion.div>
           )}
 
-          {activeTab === 'script' && projectData?.script && (
+          {/* Script Tab */}
+          {activeTab === 'script' && (
             <motion.div
               key="script"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass-card p-8"
+              className="space-y-6"
             >
-              <h3 className="text-xl font-bold font-outfit mb-6">Generated Script</h3>
-              <div className="prose prose-invert max-w-none">
-                <p className="whitespace-pre-wrap leading-relaxed text-lg">
-                  {projectData.script.full_script}
-                </p>
+              <div className="glass-card p-8">
+                <h3 className="text-xl font-bold font-outfit mb-6">Generated Script</h3>
+                {getScript() ? (
+                  <div className="prose prose-invert max-w-none">
+                    <p className="whitespace-pre-wrap leading-relaxed text-lg">
+                      {getScript()}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">Script data is being generated...</p>
+                )}
               </div>
+
+              {getScriptSections().length > 0 && (
+                <div className="glass-card p-8">
+                  <h3 className="text-lg font-bold font-outfit mb-4">Script Sections</h3>
+                  <div className="space-y-4">
+                    {getScriptSections().map((section: any, idx: number) => (
+                      <div key={idx} className="p-4 bg-white/5 rounded-lg border border-white/10">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-bold text-purple-400">{section.label || `Section ${idx + 1}`}</span>
+                          <span className="text-xs text-muted-foreground">{section.time_range || ''}</span>
+                        </div>
+                        <p className="text-sm text-white/80">{section.content || ''}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Research insights */}
+              {getResearch().trends && getResearch().trends.length > 0 && (
+                <div className="glass-card p-8">
+                  <h3 className="text-lg font-bold font-outfit mb-4">Research Insights</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {getResearch().hooks && getResearch().hooks.length > 0 && (
+                      <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                        <h4 className="text-sm font-bold text-cyan-400 mb-2">🎣 Hooks</h4>
+                        <ul className="space-y-1">
+                          {getResearch().hooks.map((h: string, i: number) => (
+                            <li key={i} className="text-sm text-white/70">• {h}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {getResearch().viral_angles && getResearch().viral_angles.length > 0 && (
+                      <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                        <h4 className="text-sm font-bold text-pink-400 mb-2">🔥 Viral Angles</h4>
+                        <ul className="space-y-1">
+                          {getResearch().viral_angles.map((a: string, i: number) => (
+                            <li key={i} className="text-sm text-white/70">• {a}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
-          {activeTab === 'storyboard' && projectData?.storyboard && (
+          {/* Storyboard Tab */}
+          {activeTab === 'storyboard' && (
             <motion.div
               key="storyboard"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="grid gap-6"
+              className="space-y-6"
             >
-              {projectData.storyboard.scenes.map((scene: any, idx: number) => (
-                <div key={idx} className="glass-card p-6 flex flex-col md:flex-row gap-6">
-                  <div className="w-full md:w-48 aspect-video bg-black/40 rounded-lg border border-white/5 flex items-center justify-center relative overflow-hidden group">
-                     <ImageIcon className="w-8 h-8 text-white/20 group-hover:scale-110 transition-transform" />
-                     <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 rounded text-xs font-medium">Scene {scene.scene_number}</div>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <h4 className="font-bold">Visual Description</h4>
-                    <p className="text-muted-foreground text-sm">{scene.visual_description}</p>
-                    <div className="flex gap-4 mt-4 text-xs font-medium">
-                      <span className="px-2 py-1 bg-white/5 rounded-md">⏳ {scene.duration}</span>
-                      <span className="px-2 py-1 bg-white/5 rounded-md text-purple-300">🎥 {scene.camera_angle || 'Auto'}</span>
+              {getScenes().length > 0 ? (
+                getScenes().map((scene: any, idx: number) => (
+                  <div key={idx} className="glass-card p-6 flex flex-col md:flex-row gap-6">
+                    <div className="w-full md:w-48 aspect-video relative">
+                      <StoryboardImage
+                        prompt={scene.image_prompt || scene.visual_description}
+                        sceneNumber={scene.scene_number || idx + 1}
+                        alt={`Scene ${scene.scene_number || idx + 1}`}
+                        shouldLoad={imageStatuses[idx] === 'loading' || imageStatuses[idx] === 'completed' || imageStatuses[idx] === 'failed'}
+                        onLoadComplete={() => {
+                          setImageStatuses(prev => {
+                            const next = [...prev];
+                            next[idx] = 'completed';
+                            return next;
+                          });
+                        }}
+                        onLoadError={() => {
+                          setImageStatuses(prev => {
+                            const next = [...prev];
+                            next[idx] = 'failed';
+                            return next;
+                          });
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <h4 className="font-bold">Visual Description</h4>
+                      <p className="text-muted-foreground text-sm">{scene.visual_description || 'No description available'}</p>
+                      <div className="flex gap-4 mt-4 text-xs font-medium flex-wrap">
+                        <span className="px-2 py-1 bg-white/5 rounded-md">⏳ {scene.duration || 'N/A'}</span>
+                        <span className="px-2 py-1 bg-white/5 rounded-md text-purple-300">🎥 {scene.camera_angle || 'Auto'}</span>
+                        {scene.emotion && <span className="px-2 py-1 bg-white/5 rounded-md text-pink-300">💡 {scene.emotion}</span>}
+                      </div>
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="glass-card p-8 text-center">
+                  <p className="text-muted-foreground">Storyboard data is being generated...</p>
                 </div>
-              ))}
+              )}
             </motion.div>
           )}
           
-          {activeTab === 'seo' && projectData?.seo && (
+          {/* SEO Tab */}
+          {activeTab === 'seo' && (
             <motion.div
               key="seo"
               initial={{ opacity: 0, y: 10 }}
@@ -222,13 +496,136 @@ export default function ProjectResultPage() {
             >
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-1">Optimized Title</h4>
-                <p className="text-xl font-bold">{projectData.seo.title}</p>
+                <p className="text-xl font-bold">{getSeoTitle()}</p>
               </div>
               <div className="h-px w-full bg-white/10" />
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-1">Description</h4>
-                <p className="text-white/90">{projectData.seo.description}</p>
+                <p className="text-white/90">{getSeoDescription() || 'Generating...'}</p>
               </div>
+              {getSeoTags().length > 0 && (
+                <>
+                  <div className="h-px w-full bg-white/10" />
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Tags</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {getSeoTags().map((tag: string, i: number) => (
+                        <span key={i} className="px-3 py-1 bg-purple-500/10 text-purple-300 rounded-full text-xs border border-purple-500/20">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+              {getSeoHashtags().length > 0 && (
+                <>
+                  <div className="h-px w-full bg-white/10" />
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Hashtags</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {getSeoHashtags().map((tag: string, i: number) => (
+                        <span key={i} className="px-3 py-1 bg-blue-500/10 text-blue-300 rounded-full text-xs border border-blue-500/20">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          )}
+
+          {/* Voice-Over Tab */}
+          {activeTab === 'voice' && (
+            <motion.div
+              key="voice"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-card p-8 space-y-6"
+            >
+              <h3 className="text-xl font-bold font-outfit mb-4">Voice-Over Directions</h3>
+              {getVoice().narration_script ? (
+                <>
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Narration Script</h4>
+                    <p className="whitespace-pre-wrap text-white/90 leading-relaxed">{getVoice().narration_script}</p>
+                  </div>
+                  <div className="h-px w-full bg-white/10" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-white/5 rounded-lg">
+                      <h4 className="text-sm font-bold text-cyan-400 mb-1">Speaking Speed</h4>
+                      <p className="text-white/80 text-sm capitalize">{getVoice().speaking_speed || 'Medium'}</p>
+                    </div>
+                    {getVoice().pauses && getVoice().pauses.length > 0 && (
+                      <div className="p-4 bg-white/5 rounded-lg">
+                        <h4 className="text-sm font-bold text-pink-400 mb-1">Pauses</h4>
+                        <ul className="space-y-1">
+                          {getVoice().pauses.map((p: string, i: number) => (
+                            <li key={i} className="text-sm text-white/70">• {p}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="text-muted-foreground">Voice-over data is being generated...</p>
+              )}
+            </motion.div>
+          )}
+
+          {/* Quality Audit Tab */}
+          {activeTab === 'quality' && (
+            <motion.div
+              key="quality"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-card p-8 space-y-6"
+            >
+              <h3 className="text-xl font-bold font-outfit mb-4">Quality Audit</h3>
+              {getQuality().overall_score !== undefined ? (
+                <>
+                  <div className="flex items-center gap-6">
+                    <div className="w-24 h-24 rounded-full border-4 border-purple-500 flex items-center justify-center">
+                      <span className="text-3xl font-bold">{getQuality().overall_score || 0}</span>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold">Overall Quality Score</p>
+                      <p className="text-muted-foreground text-sm">Based on {(getQuality().metrics || []).length} metrics</p>
+                    </div>
+                  </div>
+                  {(getQuality().metrics || []).length > 0 && (
+                    <>
+                      <div className="h-px w-full bg-white/10" />
+                      <div className="space-y-3">
+                        {getQuality().metrics.map((metric: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <span className="font-medium text-sm">{metric.name || `Metric ${i+1}`}</span>
+                            <div className="flex items-center gap-3">
+                              <div className="w-32 h-2 rounded-full bg-black/50 overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full" style={{width: `${metric.score || 0}%`}} />
+                              </div>
+                              <span className="text-sm font-bold w-8 text-right">{metric.score || 0}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {(getQuality().suggestions || []).length > 0 && (
+                    <>
+                      <div className="h-px w-full bg-white/10" />
+                      <div>
+                        <h4 className="text-sm font-bold text-yellow-400 mb-2">💡 Suggestions</h4>
+                        <ul className="space-y-1">
+                          {getQuality().suggestions.map((s: string, i: number) => (
+                            <li key={i} className="text-sm text-white/70">• {s}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <p className="text-muted-foreground">Quality audit data is being generated...</p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

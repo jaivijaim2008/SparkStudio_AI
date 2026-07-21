@@ -40,5 +40,5 @@ class ThumbnailAgent(BaseAgent):
             self._logger.info("Thumbnail generation completed successfully.")
             return validated.model_dump()
         except Exception as e:
-            self._logger.error("Failed to parse or validate LLM response: %s", e)
-            raise
+            self._logger.warning("Failed to parse LLM response, returning raw text fallback: %s", e)
+            return ThumbnailOutput().model_dump()

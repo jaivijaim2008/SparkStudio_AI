@@ -55,6 +55,10 @@ class ProjectInput(BaseModel):
         description="Target video length in seconds",
         examples=[30, 60, 90, 180],
     )
+    user_email: Optional[str] = Field(
+        default=None,
+        description="The email of the user who created this project"
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════

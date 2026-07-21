@@ -89,6 +89,36 @@ class BaseAgent(ABC):
     # ── JSON Extraction ─────────────────────────────────────────────────
 
     @staticmethod
+    def _escape_control_chars_in_json(text: str) -> str:
+        """Escape unescaped control characters (newlines, tabs) inside double-quoted JSON strings."""
+        chars = []
+        in_string = False
+        escaped = False
+        for char in text:
+            if char == '"' and not escaped:
+                in_string = not in_string
+            elif char == '\\' and not escaped:
+                escaped = True
+                chars.append(char)
+                continue
+            elif in_string:
+                if char == '\n':
+                    chars.append('\\n')
+                    escaped = False
+                    continue
+                elif char == '\r':
+                    chars.append('\\r')
+                    escaped = False
+                    continue
+                elif char == '\t':
+                    chars.append('\\t')
+                    escaped = False
+                    continue
+            escaped = False
+            chars.append(char)
+        return "".join(chars)
+
+    @staticmethod
     def _parse_json_response(response: str) -> dict[str, Any]:
         """
         Extract a JSON object from an LLM response.
@@ -104,7 +134,8 @@ class BaseAgent(ABC):
         Raises:
             ValueError: If no valid JSON can be extracted.
         """
-        text = response.strip()
+        # Preprocess to escape literal control characters inside double quotes
+        text = BaseAgent._escape_control_chars_in_json(response.strip())
 
         # Strategy 1: Try the raw string directly
         try:
@@ -140,8 +171,26 @@ class BaseAgent(ABC):
         """Serialise prior-agent outputs into a context string for the prompt."""
         if not context:
             return ""
+
+        # Context Pruning / Token Optimization:
+        # Each agent only receives the specific preceding context it actually needs.
+        # This prevents 413 Payload Too Large and token limit issues.
+        allowed_keys = []
+        if self.agent_name == "script":
+            allowed_keys = ["research"]
+        elif self.agent_name in ["storyboard", "thumbnail", "seo", "subtitle", "voice"]:
+            allowed_keys = ["script"]
+        elif self.agent_name == "quality":
+            allowed_keys = ["research", "script", "storyboard", "thumbnail", "seo", "voice"]
+        else:
+            allowed_keys = list(context.keys())
+
+        filtered_context = {k: v for k, v in context.items() if k in allowed_keys}
+        if not filtered_context:
+            return ""
+
         parts: list[str] = ["\n--- CONTEXT FROM PREVIOUS AGENTS ---"]
-        for agent_name, data in context.items():
+        for agent_name, data in filtered_context.items():
             serialised = json.dumps(data, indent=2, default=str)
             parts.append(f"\n[{agent_name.upper()}]\n{serialised}")
         parts.append("\n--- END CONTEXT ---\n")

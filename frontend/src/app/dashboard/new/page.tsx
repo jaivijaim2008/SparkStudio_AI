@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'motion/react';
-import { Wand2, Youtube, Instagram, MonitorPlay, Smartphone } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Wand2, Video, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
+import { apiUrl } from '@/lib/api';
 
 export default function NewProject() {
   const router = useRouter();
@@ -22,8 +23,8 @@ export default function NewProject() {
   const platforms = [
     { name: 'YouTube Shorts', icon: Smartphone, length: 60 },
     { name: 'TikTok', icon: Smartphone, length: 60 },
-    { name: 'Instagram Reels', icon: Instagram, length: 60 },
-    { name: 'YouTube Long', icon: Youtube, length: 600 },
+    { name: 'Instagram Reels', icon: Smartphone, length: 60 },
+    { name: 'YouTube Long', icon: Video, length: 600 },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,16 +37,31 @@ export default function NewProject() {
     setIsGenerating(true);
     
     try {
-      // In a real app, this would POST to /api/generate
-      // For this demo, we'll route to the dummy project ID that uses sample data
       toast.success('Project created! Initializing AI agents...');
+
+      const userEmail = typeof window !== 'undefined' ? localStorage.getItem('sparkstudio-user-email') : null;
+
+      const response = await fetch(apiUrl('/api/projects'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...formData,
+          user_email: userEmail || undefined
+        })
+      });
       
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to create project');
+      }
       
-      router.push('/dashboard/project/demo-1234-5678');
+      const data = await response.json();
+      router.push(`/dashboard/project/${data.project_id}`);
     } catch (error) {
-      toast.error('Failed to create project');
+      console.error('Project creation failed:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create project');
       setIsGenerating(false);
     }
   };
@@ -128,8 +144,7 @@ export default function NewProject() {
         </div>
 
         {/* Generate Button */}
-        <div className="pt-6 border-t border-white/10 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">This will consume <span className="text-white font-medium">10 credits</span>.</p>
+        <div className="pt-6 border-t border-white/10 flex justify-end">
           <button
             type="submit"
             disabled={isGenerating || !formData.topic}
