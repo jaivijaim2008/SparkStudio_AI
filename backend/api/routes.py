@@ -247,12 +247,16 @@ async def export_project(project_id: str):
         else:
             raise HTTPException(status_code=404, detail="Project not found")
         
-    zip_bytes = ExportService.generate_zip_package(project_data)
+    import io
+    pdf_bytes = ExportService.generate_pdf_report(project_data)
+    
+    topic_slug = "".join([c if c.isalnum() else "_" for c in project_data.get("input", {}).get("topic", "sparkstudio")])
+    filename = f"sparkstudio_{topic_slug[:30]}.pdf"
     
     return StreamingResponse(
-        io.BytesIO(zip_bytes),
-        media_type="application/zip",
-        headers={"Content-Disposition": f"attachment; filename=sparkstudio_{project_id}.zip"}
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
 @router.get("/projects")

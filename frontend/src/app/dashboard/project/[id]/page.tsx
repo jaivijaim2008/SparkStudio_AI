@@ -154,7 +154,7 @@ export default function ProjectResultPage() {
   const handleDownload = () => {
     const link = document.createElement('a');
     link.href = apiUrl(`/api/project/${projectId}/export`);
-    link.download = `sparkstudio_${projectId}.zip`;
+    link.download = `sparkstudio_${projectId}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
