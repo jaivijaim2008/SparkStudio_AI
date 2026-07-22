@@ -81,61 +81,49 @@ class LLMService:
         prompt: str,
         system_prompt: Optional[str] = None,
     ) -> str:
-        """Internal retry loop — runs inside the semaphore."""
-        last_error: Optional[Exception] = None
+        """Internal retry loop with provider fallback — runs inside the semaphore."""
+        # Determine the order of providers to try
+        primary_provider = self._provider
+        providers_to_try = [primary_provider]
+        
+        alternatives = ["gemini", "groq", "openai", "openrouter", "ollama"]
+        for alt in alternatives:
+            if alt not in providers_to_try:
+                # Check if the alternative provider has keys/config configured
+                if alt == "gemini" and settings.gemini_keys:
+                    providers_to_try.append(alt)
+                elif alt == "groq" and settings.groq_keys:
+                    providers_to_try.append(alt)
+                elif alt == "openai" and settings.OPENAI_API_KEY:
+                    providers_to_try.append(alt)
+                elif alt == "openrouter" and settings.OPENROUTER_API_KEY:
+                    providers_to_try.append(alt)
+                elif alt == "ollama":
+                    providers_to_try.append(alt)
 
-        for attempt in range(1, self.MAX_RETRIES + 1):
+        last_error: Optional[Exception] = None
+        
+        for provider in providers_to_try:
+            logger.info("Attempting generation using LLM provider: %s", provider)
+            # Try to generate using the selected provider
             try:
-                if self._provider == "ollama":
+                if provider == "ollama":
                     return await self._generate_ollama(prompt, system_prompt)
-                elif self._provider == "openai":
+                elif provider == "openai":
                     return await self._generate_openai(prompt, system_prompt)
-                elif self._provider == "gemini":
+                elif provider == "gemini":
                     return await self._generate_gemini(prompt, system_prompt)
-                elif self._provider == "groq":
+                elif provider == "groq":
                     return await self._generate_groq(prompt, system_prompt)
-                elif self._provider == "openrouter":
+                elif provider == "openrouter":
                     return await self._generate_openrouter(prompt, system_prompt)
-                else:
-                    raise ValueError(f"Unsupported LLM provider: {self._provider}")
-            except httpx.HTTPStatusError as exc:
-                # Don't retry on auth/config errors — fail immediately
-                if exc.response.status_code in (400, 401, 403):
-                    error_body = exc.response.text[:300]
-                    logger.error(
-                        "LLM call failed with %d (non-retryable): %s",
-                        exc.response.status_code, error_body,
-                    )
-                    raise RuntimeError(
-                        f"LLM API error {exc.response.status_code}: {error_body}"
-                    ) from exc
-                # Rate limit (429): use Retry-After header if available
-                if exc.response.status_code == 429:
-                    retry_after = exc.response.headers.get("retry-after")
-                    wait = float(retry_after) if retry_after else min(self.BACKOFF_BASE ** attempt, 30)
-                    logger.warning(
-                        "Rate limited (429). Waiting %.1fs (attempt %d/%d)…",
-                        wait, attempt, self.MAX_RETRIES,
-                    )
-                else:
-                    wait = min(self.BACKOFF_BASE ** attempt, 30)
-                    logger.warning(
-                        "LLM call attempt %d/%d failed (%d). Retrying in %.1fs…",
-                        attempt, self.MAX_RETRIES, exc.response.status_code, wait,
-                    )
-                last_error = exc
-                await asyncio.sleep(wait)
             except Exception as exc:
+                logger.warning("LLM provider %s failed: %s", provider, exc)
                 last_error = exc
-                wait = min(self.BACKOFF_BASE ** attempt, 30)
-                logger.warning(
-                    "LLM call attempt %d/%d failed (%s). Retrying in %.1fs…",
-                    attempt, self.MAX_RETRIES, str(exc)[:120], wait,
-                )
-                await asyncio.sleep(wait)
+                # Continue to the next provider in the fallback chain
 
         raise RuntimeError(
-            f"LLM generation failed after {self.MAX_RETRIES} attempts: {last_error}"
+            f"LLM generation failed for all attempted providers {providers_to_try}. Last error: {last_error}"
         )
 
     # ── Ollama ──────────────────────────────────────────────────────────
