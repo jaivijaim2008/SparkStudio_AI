@@ -100,7 +100,7 @@ export default function SettingsPage() {
                     className={`p-4 rounded-xl text-left space-y-3 relative overflow-hidden border-2 transition-all ${
                       theme === 'dark'
                         ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10'
-                        : 'border-white/10 hover:border-white/20 bg-white/5'
+                        : 'border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20 bg-slate-200/50 dark:bg-white/5'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -124,17 +124,17 @@ export default function SettingsPage() {
                     </div>
                   </button>
 
-                  {/* Clean Light */}
+                  {/* Soft Light */}
                   <button 
                     type="button" 
                     onClick={() => {
                       setTheme('light');
-                      toast.success('Theme changed to Clean Light');
+                      toast.success('Theme changed to Soft Light');
                     }}
                     className={`p-4 rounded-xl text-left space-y-3 relative overflow-hidden border-2 transition-all ${
                       theme === 'light'
                         ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10'
-                        : 'border-white/10 hover:border-white/20 bg-white/5'
+                        : 'border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20 bg-slate-200/50 dark:bg-white/5'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -147,14 +147,14 @@ export default function SettingsPage() {
                         </div>
                       )}
                     </div>
-                    <div className="w-full h-12 bg-gradient-to-r from-gray-100 via-white to-gray-50 rounded-lg border border-gray-300 p-2 flex items-center gap-1.5">
+                    <div className="w-full h-12 bg-gradient-to-r from-slate-200 via-slate-100 to-white rounded-lg border border-slate-300 p-2 flex items-center gap-1.5">
                       <div className="w-3 h-3 rounded-full bg-purple-600" />
-                      <div className="w-12 h-2 rounded bg-gray-800" />
-                      <div className="w-6 h-2 rounded bg-gray-400" />
+                      <div className="w-12 h-2 rounded bg-slate-700" />
+                      <div className="w-6 h-2 rounded bg-slate-400" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold block">Clean Light</span>
-                      <span className="text-xs text-muted-foreground">Bright, clean aesthetic with high contrast</span>
+                      <span className="text-sm font-semibold block">Soft Light</span>
+                      <span className="text-xs text-muted-foreground">Eye-friendly soft slate theme with clear text contrast</span>
                     </div>
                   </button>
 
@@ -168,7 +168,7 @@ export default function SettingsPage() {
                     className={`p-4 rounded-xl text-left space-y-3 relative overflow-hidden border-2 transition-all ${
                       theme === 'system'
                         ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10'
-                        : 'border-white/10 hover:border-white/20 bg-white/5'
+                        : 'border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20 bg-slate-200/50 dark:bg-white/5'
                     }`}
                   >
                     <div className="flex items-center justify-between">
