@@ -304,10 +304,10 @@ export default function LandingPage() {
               </ul>
               <Link
                 href="/dashboard/new"
-                className={`block w-full text-center py-3.5 rounded-full font-semibold transition-all shadow-md ${
+                className={`block w-full text-center py-3.5 rounded-full font-bold text-sm tracking-wide transition-all ${
                   plan.featured
-                    ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] shadow-purple-500/30'
-                    : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white border border-slate-300 dark:border-white/15 hover:scale-[1.02] active:scale-[0.98]'
+                    ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 !text-white shadow-lg shadow-purple-500/30'
+                    : 'bg-slate-900 hover:bg-purple-600 !text-white border border-slate-800 shadow-md'
                 }`}
               >
                 {plan.cta}
