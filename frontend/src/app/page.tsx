@@ -275,33 +275,39 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: idx * 0.1 }}
-              className={`glass-card p-8 text-left relative ${plan.featured ? 'border-purple-500/50 shadow-xl shadow-purple-500/10' : ''}`}
+              className={`glass-card p-8 md:p-10 text-left relative overflow-hidden rounded-[28px] md:rounded-[32px] transition-all duration-300 hover:-translate-y-2 border backdrop-blur-2xl ${
+                plan.featured
+                  ? 'border-purple-500/60 bg-gradient-to-b from-purple-500/15 via-purple-500/5 to-black/40 shadow-2xl shadow-purple-500/20'
+                  : 'border-white/10 hover:border-purple-500/30 bg-black/40 hover:bg-black/60 shadow-xl'
+              }`}
             >
               {plan.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-xs font-bold">
+                <div className="absolute top-0 right-6 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-b-xl text-xs font-bold text-white shadow-lg shadow-purple-500/30 tracking-wide uppercase">
                   Most Popular
                 </div>
               )}
-              <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
+              <h3 className="text-2xl font-bold font-outfit mb-1">{plan.name}</h3>
               <p className="text-muted-foreground text-sm mb-6">{plan.desc}</p>
               <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-4xl font-outfit font-bold">{plan.price}</span>
-                <span className="text-muted-foreground text-sm">{plan.period}</span>
+                <span className="text-4xl md:text-5xl font-outfit font-bold tracking-tight">{plan.price}</span>
+                <span className="text-muted-foreground text-sm font-medium">{plan.period}</span>
               </div>
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-3.5 mb-8">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                  <li key={f} className="flex items-center gap-2.5 text-sm font-medium text-slate-300">
+                    <div className="w-5 h-5 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-purple-400" />
+                    </div>
                     {f}
                   </li>
                 ))}
               </ul>
               <Link
                 href="/dashboard/new"
-                className={`block w-full text-center py-3 rounded-xl font-medium transition-all ${
+                className={`block w-full text-center py-3.5 rounded-full font-semibold transition-all shadow-md ${
                   plan.featured
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 shadow-lg shadow-purple-500/20'
-                    : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                    ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] shadow-purple-500/30'
+                    : 'bg-white/10 border border-white/15 hover:bg-white/20 text-white hover:scale-[1.02] active:scale-[0.98]'
                 }`}
               >
                 {plan.cta}
