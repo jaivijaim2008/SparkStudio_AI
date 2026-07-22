@@ -1,10 +1,9 @@
 @import "tailwindcss";
 
-/* SparkStudio Theme Design System */
+/* SparkStudio AI Theme Design System */
 
 @layer base {
   :root {
-    /* Default to Midnight Dark theme tokens */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
 
@@ -26,136 +25,116 @@
 
     --radius: 0.75rem;
   }
-
-  html.light {
-    /* Soft Light Theme Tokens */
-    --background: 220 14% 96%;
-    --foreground: 222 47% 11%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-
-    --primary: 262.1 83.3% 57.8%;
-    --primary-foreground: 210 40% 98%;
-
-    --muted: 215 16% 90%;
-    --muted-foreground: 215.4 16.3% 38%;
-
-    --border: 214.3 31.8% 85%;
-    --input: 214.3 31.8% 85%;
-    --ring: 262.1 83.3% 57.8%;
-  }
-
-  html.dark {
-    /* Midnight Dark Theme Tokens */
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 263.4 70% 50.4%;
-    --primary-foreground: 210 40% 98%;
-
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 263.4 70% 50.4%;
-  }
 }
 
-/* Glassmorphism Utilities */
-.glass {
-  background-color: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.light .glass {
-  background-color: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.dark .glass {
-  background-color: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.glass-card {
-  background-color: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
-}
-
-.light .glass-card {
-  background-color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(203, 213, 225, 0.7);
-  border-radius: 1rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
-  color: #0f172a;
-}
-
-.dark .glass-card {
-  background-color: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+/* Base Body Colors */
+body {
+  background-color: #0a0a0f;
   color: #f8fafc;
+  min-height: 100vh;
 }
 
-/* Light Theme Card Typography Overrides */
-.light .glass-card h1,
-.light .glass-card h2,
-.light .glass-card h3,
-.light .glass-card h4,
-.light .glass-card h5,
-.light .glass-card h6 {
+html.dark body,
+.dark body {
+  background-color: #0a0a0f !important;
+  color: #f8fafc !important;
+}
+
+html.light body,
+.light body {
+  background-color: #f1f5f9 !important;
   color: #0f172a !important;
 }
 
-.light .glass-card p,
-.light .glass-card span:not(.text-purple-400):not(.text-blue-400):not(.text-cyan-400) {
-  color: #334155;
+/* Midnight Dark Glass & Card Utilities */
+.dark .glass-card,
+html.dark .glass-card {
+  background-color: rgba(15, 15, 25, 0.75) !important;
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  color: #f8fafc !important;
 }
 
-.light .glass-card .text-muted-foreground {
-  color: #64748b !important;
+.dark .glass,
+html.dark .glass {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Dark Theme Card Typography Overrides */
 .dark .glass-card h1,
 .dark .glass-card h2,
 .dark .glass-card h3,
 .dark .glass-card h4,
 .dark .glass-card h5,
-.dark .glass-card h6 {
+.dark .glass-card h6,
+html.dark .glass-card h1,
+html.dark .glass-card h2,
+html.dark .glass-card h3,
+html.dark .glass-card h4,
+html.dark .glass-card h5,
+html.dark .glass-card h6 {
   color: #ffffff !important;
 }
 
 .dark .glass-card p,
-.dark .glass-card span {
-  color: #e2e8f0;
+.dark .glass-card label,
+html.dark .glass-card p,
+html.dark .glass-card label {
+  color: #cbd5e1 !important;
 }
 
-.dark .glass-card .text-muted-foreground {
+.dark .glass-card .text-muted-foreground,
+html.dark .glass-card .text-muted-foreground {
   color: #94a3b8 !important;
 }
 
-/* Custom Utilities */
+/* Soft Light Glass & Card Utilities */
+.light .glass-card,
+html.light .glass-card {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(203, 213, 225, 0.8) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06) !important;
+  color: #0f172a !important;
+}
+
+.light .glass,
+html.light .glass {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(203, 213, 225, 0.6) !important;
+}
+
+.light .glass-card h1,
+.light .glass-card h2,
+.light .glass-card h3,
+.light .glass-card h4,
+.light .glass-card h5,
+.light .glass-card h6,
+html.light .glass-card h1,
+html.light .glass-card h2,
+html.light .glass-card h3,
+html.light .glass-card h4,
+html.light .glass-card h5,
+html.light .glass-card h6 {
+  color: #0f172a !important;
+}
+
+.light .glass-card p,
+.light .glass-card label,
+html.light .glass-card p,
+html.light .glass-card label {
+  color: #334155 !important;
+}
+
+.light .glass-card .text-muted-foreground,
+html.light .glass-card .text-muted-foreground {
+  color: #64748b !important;
+}
+
+/* Custom Utility Overrides */
 .text-muted-foreground {
   color: hsl(var(--muted-foreground));
 }
@@ -184,7 +163,7 @@
   animation: blob 7s infinite;
 }
 
-/* Premium UI Scrollbar */
+/* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -193,11 +172,11 @@
   background: rgba(0, 0, 0, 0.2); 
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1); 
+  background: rgba(255, 255, 255, 0.15); 
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2); 
+  background: rgba(255, 255, 255, 0.3); 
 }
 
 .hover-glow:hover {
@@ -210,10 +189,4 @@
   background: linear-gradient(to right, #a855f7, #3b82f6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
 }

@@ -55,9 +55,9 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-100 dark:bg-background text-slate-900 dark:text-foreground">
+    <div className="flex h-screen overflow-hidden bg-slate-100 dark:bg-[#0a0a0f] text-slate-900 dark:text-slate-100">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur-md flex flex-col">
+      <aside className="w-64 border-r border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-[#0f0f17] backdrop-blur-md flex flex-col">
         <div className="p-6">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
