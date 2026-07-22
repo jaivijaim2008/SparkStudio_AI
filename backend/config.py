@@ -68,6 +68,10 @@ class Settings(BaseSettings):
         default=False,
         description="When True, agents return sample data instead of calling LLM",
     )
+    YOUTUBE_COOKIES_PATH: str = Field(
+        default="",
+        description="Path to Netscape cookies.txt file to bypass YouTube IP blocks",
+    )
     CORS_ORIGINS: str = Field(
         default="http://localhost:3000,http://localhost:5173,http://localhost:5174",
         description="Comma-separated list of allowed CORS origins",

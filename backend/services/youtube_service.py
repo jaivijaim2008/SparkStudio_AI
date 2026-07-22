@@ -8,6 +8,7 @@ summaries using LLMService.
 
 import re
 import logging
+import asyncio
 from typing import Dict, Any, Optional
 import httpx
 
@@ -82,10 +83,27 @@ async def fetch_video_metadata(client: httpx.AsyncClient, video_id: str) -> Dict
 def fetch_transcript(video_id: str) -> str:
     """
     Fetch transcript/captions for a YouTube video using youtube-transcript-api.
-    Raises ValueError with user-friendly error message on failure.
+    Falls back to a public URL-based transcript extractor if local fetching fails (e.g. cloud IP blocked).
     """
+    import os
+    import http.cookiejar
+    import requests
+
+    session = None
+    cookies_path = getattr(settings, "YOUTUBE_COOKIES_PATH", "")
+    if cookies_path and os.path.exists(cookies_path):
+        try:
+            session = requests.Session()
+            cookie_jar = http.cookiejar.MozillaCookieJar(cookies_path)
+            cookie_jar.load(ignore_discard=True, ignore_expires=True)
+            session.cookies = cookie_jar
+            logger.info(f"Loaded YouTube cookies from {cookies_path} for video {video_id}")
+        except Exception as e:
+            logger.error(f"Failed to load YouTube cookies from {cookies_path}: {e}")
+            session = None
+
     try:
-        ytt = YouTubeTranscriptApi()
+        ytt = YouTubeTranscriptApi(http_client=session)
         
         # Try fetching default transcript first
         try:
@@ -114,23 +132,32 @@ def fetch_transcript(video_id: str) -> str:
             
         return full_text
         
-    except (TranscriptsDisabled, NoTranscriptFound) as exc:
-        logger.warning(f"Transcripts disabled or not found for {video_id}: {exc}")
-        raise ValueError(
-            "Captions/transcripts are not available for this YouTube video. "
-            "Please make sure the video has public subtitles enabled or try another video link."
-        )
-    except VideoUnavailable as exc:
-        logger.warning(f"Video {video_id} is unavailable: {exc}")
-        raise ValueError(
-            "The YouTube video is unavailable or private. Please check the URL and try again."
-        )
-    except ValueError:
-        raise
     except Exception as exc:
-        logger.error(f"Failed to extract transcript for {video_id}: {exc}")
+        logger.warning(
+            "youtube-transcript-api failed for video %s: %s. Trying public transcript fallback...",
+            video_id, exc
+        )
+        # Fallback to public URL extractor
+        try:
+            url = f"https://youtube-transcript.ai/transcript/{video_id}.txt"
+            res = requests.get(url, timeout=15)
+            if res.status_code == 200 and res.text:
+                raw_text = res.content.decode("utf-8")
+                # Clean timestamps and headers
+                if "## Transcript" in raw_text:
+                    raw_text = raw_text.split("## Transcript", 1)[1]
+                # Remove timestamps like [0:02]
+                cleaned = re.sub(r'\[\d+:\d+(?::\d+)?\]', '', raw_text)
+                lines = [line.strip() for line in cleaned.split("\n") if line.strip()]
+                full_text = " ".join(lines)
+                if full_text.strip():
+                    logger.info("Successfully fetched transcript from fallback service")
+                    return full_text
+        except Exception as fallback_exc:
+            logger.error("Fallback transcript service failed: %s", fallback_exc)
+
         raise ValueError(
-            f"Could not extract transcript from YouTube video. Please ensure the link is correct."
+            "Could not extract transcript from YouTube video. Please ensure the link is correct."
         )
 
 
@@ -168,6 +195,67 @@ This video ({total_words} words transcript analyzed) provides essential insights
         "key_takeaways": [p for p in key_points[:4]],
         "overview": overview
     }
+
+
+async def summarize_chunks(
+    llm: LLMService,
+    transcript_text: str,
+    video_title: str
+) -> str:
+    """
+    Summarize a long transcript in chunks to avoid rate limits (TPM limits) of free providers like Groq.
+    """
+    words = transcript_text.split()
+    chunk_size = 1200 # ~1500 tokens
+    chunks = [" ".join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
+    
+    logger.info(f"Splitting transcript into {len(chunks)} chunks for summarization.")
+    
+    chunk_summaries = []
+    for idx, chunk in enumerate(chunks, 1):
+        chunk_prompt = (
+            f"Summarize the following section of the YouTube video '{video_title}':\n\n"
+            f"Section {idx}/{len(chunks)} Transcript:\n{chunk}\n\n"
+            f"Provide a brief bulleted summary of this section."
+        )
+        try:
+            summary = await llm.generate(
+                prompt=chunk_prompt,
+                system_prompt="You are an assistant summarizing a section of a transcript. Keep it concise."
+            )
+            chunk_summaries.append(summary.strip())
+            # Wait a small delay to avoid hitting TPM rate limit on subsequent requests
+            await asyncio.sleep(2.0)
+        except Exception as e:
+            logger.warning(f"Failed to summarize chunk {idx}: {e}")
+            
+    if not chunk_summaries:
+        raise ValueError("Failed to summarize any of the transcript chunks.")
+        
+    # Combine the chunk summaries
+    combined_summaries_text = "\n\n".join(
+        [f"--- Section {idx} Summary ---\n{s}" for idx, s in enumerate(chunk_summaries, 1)]
+    )
+    
+    final_system_prompt = (
+        "You are an expert AI Video Content Summarizer and Blog Writer. Your goal is to combine multiple section summaries "
+        "of a YouTube video into a unified summary and a highly detailed, professional blog post/article.\n\n"
+        "Formatting Guidelines:\n"
+        "1. Start with a '### 📌 Video Overview' section (2-3 simple, clear sentences).\n"
+        "2. Include a '### 💡 Key Takeaways & Important Points' section using bullet points. Bold important key terms.\n"
+        "3. Include a '### 🎯 Beginner's Summary & Takeaway' section highlighting the main actionable message.\n"
+        "4. Include a '### 📝 Detailed Blog Post / Article' section. Write a cohesive, comprehensive, and engaging article "
+        "(300-500 words) with subheadings explaining the concepts in detail. Use a professional, informative tone suitable for publishing.\n"
+        "5. Keep the wording clear, engaging, and free of unnecessary fluff."
+    )
+    
+    final_prompt = (
+        f"Combine the following section summaries of the video '{video_title}' into a single unified summary:\n\n"
+        f"{combined_summaries_text}\n\n"
+        f"Generate the formatted unified summary now."
+    )
+    
+    return await llm.generate(prompt=final_prompt, system_prompt=final_system_prompt)
 
 
 async def generate_youtube_summary(
@@ -211,14 +299,15 @@ async def generate_youtube_summary(
         }
         
     system_prompt = (
-        "You are an expert AI Video Content Summarizer. Your goal is to generate a concise, "
-        "easy-to-understand summary in simple English so that even beginners can quickly understand "
-        "the key ideas and main takeaways of a YouTube video.\n\n"
+        "You are an expert AI Video Content Summarizer and Blog Writer. Your goal is to generate a concise, "
+        "easy-to-understand summary followed by a highly detailed, professional blog post/article based on the YouTube video.\n\n"
         "Formatting Guidelines:\n"
         "1. Start with a '### 📌 Video Overview' section (2-3 simple, clear sentences).\n"
         "2. Include a '### 💡 Key Takeaways & Important Points' section using bullet points. Bold important key terms.\n"
         "3. Include a '### 🎯 Beginner's Summary & Takeaway' section highlighting the main actionable message.\n"
-        "4. Keep the wording clear, engaging, and free of unnecessary fluff."
+        "4. Include a '### 📝 Detailed Blog Post / Article' section. Write a cohesive, comprehensive, and engaging article "
+        "(300-500 words) with subheadings explaining the concepts in detail. Use a professional, informative tone suitable for publishing.\n"
+        "5. Keep the wording clear, engaging, and free of unnecessary fluff."
     )
     
     prompt = (
@@ -230,7 +319,13 @@ async def generate_youtube_summary(
     
     llm = LLMService(client)
     try:
-        raw_summary = await llm.generate(prompt=prompt, system_prompt=system_prompt)
+        # If the transcript is long and using Groq, chunk it to avoid TPM rate limits
+        words = transcript_text.split()
+        if len(words) > 1500 and settings.LLM_PROVIDER == "groq":
+            logger.info("Transcript exceeds 1500 words and LLM_PROVIDER is groq. Using chunk-based summarization.")
+            raw_summary = await summarize_chunks(llm, transcript_text, video_title)
+        else:
+            raw_summary = await llm.generate(prompt=prompt, system_prompt=system_prompt)
         
         # Parse bullet points for key takeaways list if possible
         takeaways = []

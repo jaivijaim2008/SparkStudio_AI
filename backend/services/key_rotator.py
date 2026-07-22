@@ -60,6 +60,10 @@ class GroqKeyRotator:
             # All keys are cooling down — find the one that recovers soonest
             soonest_key = min(self._keys, key=lambda k: self._cooldowns.get(k, 0))
             wait_time = self._cooldowns[soonest_key] - now
+            if wait_time > 10.0:
+                raise RuntimeError(
+                    f"All Groq keys are rate-limited with long cooldowns. Wait time: {wait_time:.1f}s"
+                )
             logger.warning(
                 "All %d Groq keys are rate-limited. Waiting %.1fs for soonest key to recover.",
                 len(self._keys), wait_time,
