@@ -94,9 +94,9 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-slate-100 dark:bg-[#0a0a0f] text-slate-900 dark:text-slate-100 overflow-hidden relative transition-colors duration-200">
+    <div className="h-screen w-screen flex flex-col overflow-hidden relative transition-colors duration-200 dashboard-wrapper">
       {/* Top Header with Hamburger Menu */}
-      <header className="shrink-0 h-16 w-full bg-white/80 dark:bg-black/60 backdrop-blur-xl border-b border-slate-300 dark:border-white/10 px-4 md:px-6 flex items-center justify-between z-30 transition-colors duration-200">
+      <header className="shrink-0 h-16 w-full backdrop-blur-xl border-b px-4 md:px-6 flex items-center justify-between z-30 transition-colors duration-200">
         <div className="flex items-center gap-3 md:gap-4">
           <button
             onClick={() => setIsDrawerOpen(true)}
@@ -272,7 +272,7 @@ export default function DashboardLayout({
       </AnimatePresence>
 
       {/* Main Full-Screen Content Area */}
-      <main className="flex-1 w-full overflow-y-auto relative p-4 md:p-8 bg-slate-100 dark:bg-[#0a0a0f] transition-colors duration-200">
+      <main className="flex-1 w-full overflow-y-auto relative p-4 md:p-8 transition-colors duration-200 dashboard-main">
         <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/5 dark:bg-purple-500/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-[100px] pointer-events-none" />
         <div className="w-full max-w-7xl mx-auto min-h-full">
           {children}
