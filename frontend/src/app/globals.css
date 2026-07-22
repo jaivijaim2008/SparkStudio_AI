@@ -1,9 +1,34 @@
 @import "tailwindcss";
 
-/* Basic Tailwind CSS v4 Configuration */
+/* SparkStudio Theme Design System */
 
 @layer base {
   :root {
+    /* Default to Midnight Dark theme tokens */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 263.4 70% 50.4%;
+    --primary-foreground: 210 40% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 263.4 70% 50.4%;
+
+    --radius: 0.75rem;
+  }
+
+  html.light {
+    /* Soft Light Theme Tokens */
     --background: 220 14% 96%;
     --foreground: 222 47% 11%;
 
@@ -22,11 +47,10 @@
     --border: 214.3 31.8% 85%;
     --input: 214.3 31.8% 85%;
     --ring: 262.1 83.3% 57.8%;
-
-    --radius: 0.75rem;
   }
 
-  .dark {
+  html.dark {
+    /* Midnight Dark Theme Tokens */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
 
@@ -50,28 +74,85 @@
 
 /* Glassmorphism Utilities */
 .glass {
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.light .glass {
+  background-color: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .dark .glass {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .glass-card {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+.light .glass-card {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(203, 213, 225, 0.7);
   border-radius: 1rem;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+  color: #0f172a;
 }
 
 .dark .glass-card {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  color: #f8fafc;
+}
+
+/* Light Theme Card Typography Overrides */
+.light .glass-card h1,
+.light .glass-card h2,
+.light .glass-card h3,
+.light .glass-card h4,
+.light .glass-card h5,
+.light .glass-card h6 {
+  color: #0f172a !important;
+}
+
+.light .glass-card p,
+.light .glass-card span:not(.text-purple-400):not(.text-blue-400):not(.text-cyan-400) {
+  color: #334155;
+}
+
+.light .glass-card .text-muted-foreground {
+  color: #64748b !important;
+}
+
+/* Dark Theme Card Typography Overrides */
+.dark .glass-card h1,
+.dark .glass-card h2,
+.dark .glass-card h3,
+.dark .glass-card h4,
+.dark .glass-card h5,
+.dark .glass-card h6 {
+  color: #ffffff !important;
+}
+
+.dark .glass-card p,
+.dark .glass-card span {
+  color: #e2e8f0;
+}
+
+.dark .glass-card .text-muted-foreground {
+  color: #94a3b8 !important;
 }
 
 /* Custom Utilities */
@@ -103,7 +184,7 @@
   animation: blob 7s infinite;
 }
 
-/* Premium UI Enhancements */
+/* Premium UI Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
