@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* SparkStudio AI Dynamic Theme Engine */
 :root {
   --bg-main: #0a0a0f;
