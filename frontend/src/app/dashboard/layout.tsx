@@ -2,11 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Plus, History, Settings, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Plus, History, Settings, Sparkles, LogOut, User as UserIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
-import { LogOut, User as UserIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function DashboardLayout({
@@ -34,7 +33,7 @@ export default function DashboardLayout({
 
     fetchSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user?.email) {
         localStorage.setItem('sparkstudio-user-email', session.user.email);
         setUser(session.user);
@@ -44,7 +43,9 @@ export default function DashboardLayout({
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      data?.subscription?.unsubscribe?.();
+    };
   }, []);
 
   const navItems = [
@@ -75,8 +76,8 @@ export default function DashboardLayout({
                 key={item.name}
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative ${
-                  isActive 
-                    ? 'text-purple-700 dark:text-white font-semibold' 
+                  isActive
+                    ? 'text-purple-700 dark:text-white font-semibold'
                     : 'text-slate-700 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-white/5'
                 }`}
               >
@@ -100,10 +101,10 @@ export default function DashboardLayout({
           <div className="p-4 border-t border-slate-300 dark:border-white/10 bg-slate-100 dark:bg-white/5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 overflow-hidden">
               {user.user_metadata?.avatar_url ? (
-                <img 
-                  src={user.user_metadata.avatar_url} 
-                  alt="avatar" 
-                  className="w-8 h-8 rounded-full border border-purple-500/50" 
+                <img
+                  src={user.user_metadata.avatar_url}
+                  alt="avatar"
+                  className="w-8 h-8 rounded-full border border-purple-500/50"
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-purple-500/20 border border-purple-500/50 flex items-center justify-center">
@@ -119,7 +120,7 @@ export default function DashboardLayout({
                 </span>
               </div>
             </div>
-            <button 
+            <button
               onClick={async () => {
                 const supabase = createClient();
                 if (!supabase) return;
@@ -138,7 +139,6 @@ export default function DashboardLayout({
             </button>
           </div>
         )}
-
       </aside>
 
       {/* Main Content */}
