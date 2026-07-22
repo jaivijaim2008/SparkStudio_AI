@@ -69,7 +69,7 @@ html.light aside,
 
 html.light main,
 .light main {
-  background-color: #f8fafc !important;
+  background-color: transparent !important;
 }
 
 html.light .glass-card,
@@ -141,7 +141,7 @@ html.dark aside,
 
 html.dark main,
 .dark main {
-  background-color: #0a0a0f !important;
+  background-color: transparent !important;
 }
 
 .glass-card {
