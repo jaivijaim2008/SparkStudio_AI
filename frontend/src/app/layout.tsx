@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="dark">
       <body
-        className={`${inter.variable} ${outfit.variable} font-sans antialiased bg-gray-50 dark:bg-[#0a0a0f] text-gray-900 dark:text-gray-100 min-h-screen selection:bg-purple-500/30`}
+        className={`${inter.variable} ${outfit.variable} font-sans antialiased min-h-screen selection:bg-purple-500/30`}
       >
         <ThemeProvider defaultTheme="dark">
           <ReactQueryProvider>
