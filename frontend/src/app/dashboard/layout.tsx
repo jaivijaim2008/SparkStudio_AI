@@ -2,11 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Plus, History, Settings, Sparkles } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { LayoutDashboard, Plus, History, Settings, Sparkles, Menu, X, LogOut, User as UserIcon, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
-import { LogOut, User as UserIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function DashboardLayout({
@@ -16,6 +15,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -47,6 +47,22 @@ export default function DashboardLayout({
     return () => subscription.unsubscribe();
   }, []);
 
+  // Close drawer on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsDrawerOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Auto-close drawer on route change
+  useEffect(() => {
+    setIsDrawerOpen(false);
+  }, [pathname]);
+
   const navItems = [
     { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     { name: 'New Project', href: '/dashboard/new', icon: Plus },
@@ -54,51 +70,59 @@ export default function DashboardLayout({
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
 
+  const getCurrentPageTitle = () => {
+    if (pathname === '/dashboard') return 'Overview';
+    if (pathname === '/dashboard/new') return 'New Project';
+    if (pathname === '/dashboard/history') return 'History';
+    if (pathname === '/dashboard/settings') return 'Settings';
+    if (pathname.startsWith('/dashboard/project/')) return 'Project Details';
+    return 'Dashboard';
+  };
+
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-white/10 bg-black/40 backdrop-blur-md flex flex-col">
-        <div className="p-6">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
+    <div className="min-h-screen w-full flex flex-col bg-[#0a0a0f] text-gray-100 overflow-x-hidden relative">
+      {/* Top Header with Hamburger Menu */}
+      <header className="sticky top-0 z-30 w-full h-16 bg-black/60 backdrop-blur-xl border-b border-white/10 px-4 md:px-6 flex items-center justify-between">
+        <div className="flex items-center gap-3 md:gap-4">
+          <button
+            onClick={() => setIsDrawerOpen(true)}
+            aria-label="Open Navigation Menu"
+            className="p-2 rounded-xl text-gray-300 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+
+          <Link 
+            href="/" 
+            className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
+          >
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center shadow-md shadow-purple-500/20">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="font-outfit font-bold text-xl">SparkStudio</span>
+            <span className="font-outfit font-bold text-xl tracking-tight bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+              SparkStudio
+            </span>
           </Link>
+
+          <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground border-l border-white/10 pl-4 ml-1">
+            <ChevronRight className="w-4 h-4 text-white/30" />
+            <span className="font-medium text-white/90">{getCurrentPageTitle()}</span>
+          </div>
         </div>
 
-        <nav className="flex-1 px-4 py-4 space-y-2">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative ${
-                  isActive 
-                    ? 'text-white font-medium' 
-                    : 'text-muted-foreground hover:text-white hover:bg-white/5'
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active"
-                    className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/10 rounded-xl border border-white/10"
-                    initial={false}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  />
-                )}
-                <item.icon className="w-5 h-5 relative z-10" />
-                <span className="relative z-10">{item.name}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="flex items-center gap-3">
+          {pathname !== '/dashboard/new' && (
+            <Link
+              href="/dashboard/new"
+              className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium text-xs md:text-sm transition-all shadow-md shadow-purple-500/20 hover:scale-105"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Project</span>
+            </Link>
+          )}
 
-        {/* Profile Section */}
-        {user && (
-          <div className="p-4 border-t border-white/10 bg-white/5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 overflow-hidden">
+          {user && (
+            <div className="flex items-center gap-2 pl-2 border-l border-white/10">
               {user.user_metadata?.avatar_url ? (
                 <img 
                   src={user.user_metadata.avatar_url} 
@@ -110,44 +134,133 @@ export default function DashboardLayout({
                   <UserIcon className="w-4 h-4 text-purple-300" />
                 </div>
               )}
-              <div className="flex flex-col overflow-hidden text-left">
-                <span className="text-xs font-semibold text-white/95 truncate">
-                  {user.user_metadata?.full_name || 'Creator'}
-                </span>
-                <span className="text-[10px] text-muted-foreground truncate">
-                  {user.email}
-                </span>
-              </div>
             </div>
-            <button 
-              onClick={async () => {
-                const supabase = createClient();
-                if (!supabase) return;
-                try {
-                  await supabase.auth.signOut();
-                  localStorage.removeItem('sparkstudio-user-email');
-                  toast.success('Signed out successfully');
-                } catch (e) {
-                  toast.error('Failed to sign out');
-                }
-              }}
-              className="p-1.5 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-              title="Sign Out"
+          )}
+        </div>
+      </header>
+
+      {/* Slide-out Sidebar Drawer Overlay */}
+      <AnimatePresence>
+        {isDrawerOpen && (
+          <>
+            {/* Semi-transparent Overlay Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsDrawerOpen(false)}
+              className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm cursor-pointer"
+            />
+
+            {/* Slide-out Drawer Panel */}
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+              className="fixed inset-y-0 left-0 z-50 w-72 md:w-80 bg-black/90 backdrop-blur-2xl border-r border-white/10 shadow-2xl flex flex-col"
             >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+              {/* Drawer Header */}
+              <div className="p-6 flex items-center justify-between border-b border-white/10">
+                <Link 
+                  href="/" 
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="flex items-center gap-2.5"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-outfit font-bold text-xl text-white">SparkStudio AI</span>
+                </Link>
+                <button
+                  onClick={() => setIsDrawerOpen(false)}
+                  aria-label="Close Navigation Menu"
+                  className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Navigation Items */}
+              <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                {navItems.map((item) => {
+                  const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setIsDrawerOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 relative ${
+                        isActive 
+                          ? 'text-white font-medium bg-gradient-to-r from-purple-500/20 to-blue-500/10 border border-purple-500/30' 
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <item.icon className={`w-5 h-5 ${isActive ? 'text-purple-400' : ''}`} />
+                      <span>{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              {/* User Profile Section at Bottom of Drawer */}
+              {user && (
+                <div className="p-4 m-4 rounded-xl border border-white/10 bg-white/5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    {user.user_metadata?.avatar_url ? (
+                      <img 
+                        src={user.user_metadata.avatar_url} 
+                        alt="avatar" 
+                        className="w-9 h-9 rounded-full border border-purple-500/50 shrink-0" 
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-purple-500/20 border border-purple-500/50 flex items-center justify-center shrink-0">
+                        <UserIcon className="w-5 h-5 text-purple-300" />
+                      </div>
+                    )}
+                    <div className="flex flex-col overflow-hidden text-left">
+                      <span className="text-xs font-semibold text-white/95 truncate">
+                        {user.user_metadata?.full_name || 'Creator'}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground truncate">
+                        {user.email}
+                      </span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      const supabase = createClient();
+                      if (!supabase) return;
+                      try {
+                        await supabase.auth.signOut();
+                        localStorage.removeItem('sparkstudio-user-email');
+                        toast.success('Signed out successfully');
+                        setIsDrawerOpen(false);
+                      } catch (e) {
+                        toast.error('Failed to sign out');
+                      }
+                    }}
+                    className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    title="Sign Out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </motion.aside>
+          </>
         )}
+      </AnimatePresence>
 
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto relative">
+      {/* Main Full-Screen Content Area */}
+      <main className="flex-1 w-full overflow-y-auto relative p-4 md:p-8">
         <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-screen filter blur-[100px] pointer-events-none" />
-        <div className="p-8 max-w-7xl mx-auto min-h-full">
+        <div className="w-full max-w-7xl mx-auto min-h-full">
           {children}
         </div>
       </main>
     </div>
   );
 }
+
