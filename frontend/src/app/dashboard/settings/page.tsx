@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sliders, Bell, Palette, Download, HelpCircle, Save, Sun, Moon, Monitor, Check } from 'lucide-react';
+import { Sliders, Bell, Palette, Download, HelpCircle, Save, Sun, Moon, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/providers/theme-provider';
 
@@ -86,10 +86,10 @@ export default function SettingsPage() {
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                 <div>
                   <h3 className="text-lg font-bold font-outfit">Appearance & Theme</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Choose how SparkStudio AI looks to you</p>
+                  <p className="text-xs text-muted-foreground mt-1">Select your preferred SparkStudio interface theme</p>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-xl">
                   {/* Midnight Dark */}
                   <button 
                     type="button" 
@@ -97,29 +97,29 @@ export default function SettingsPage() {
                       setTheme('dark');
                       toast.success('Theme changed to Midnight Dark');
                     }}
-                    className={`p-4 rounded-xl text-left space-y-3 relative overflow-hidden border-2 transition-all ${
+                    className={`p-5 rounded-2xl text-left space-y-4 relative overflow-hidden border-2 transition-all ${
                       theme === 'dark'
-                        ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10'
-                        : 'border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20 bg-slate-200/50 dark:bg-white/5'
+                        ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20'
+                        : 'border-slate-300 dark:border-white/10 hover:border-purple-400 bg-slate-200/50 dark:bg-white/5'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="w-8 h-8 rounded-lg bg-gray-900 border border-white/10 flex items-center justify-center text-purple-400">
-                        <Moon className="w-4 h-4" />
+                      <div className="w-9 h-9 rounded-xl bg-gray-900 border border-white/10 flex items-center justify-center text-purple-400">
+                        <Moon className="w-5 h-5" />
                       </div>
                       {theme === 'dark' && (
-                        <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center text-white">
-                          <Check className="w-3 h-3" />
+                        <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center text-white shadow-md">
+                          <Check className="w-3.5 h-3.5" />
                         </div>
                       )}
                     </div>
-                    <div className="w-full h-12 bg-gradient-to-r from-gray-950 via-slate-900 to-zinc-900 rounded-lg border border-white/10 p-2 flex items-center gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-purple-500" />
-                      <div className="w-12 h-2 rounded bg-white/20" />
-                      <div className="w-6 h-2 rounded bg-white/10" />
+                    <div className="w-full h-14 bg-gradient-to-r from-gray-950 via-slate-900 to-zinc-900 rounded-xl border border-white/10 p-3 flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-purple-500" />
+                      <div className="w-16 h-2.5 rounded bg-white/30" />
+                      <div className="w-8 h-2.5 rounded bg-white/15" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold block">Midnight Dark</span>
+                      <span className="text-base font-bold block">Midnight Dark</span>
                       <span className="text-xs text-muted-foreground">Deep dark theme with glassmorphism</span>
                     </div>
                   </button>
@@ -131,64 +131,30 @@ export default function SettingsPage() {
                       setTheme('light');
                       toast.success('Theme changed to Soft Light');
                     }}
-                    className={`p-4 rounded-xl text-left space-y-3 relative overflow-hidden border-2 transition-all ${
+                    className={`p-5 rounded-2xl text-left space-y-4 relative overflow-hidden border-2 transition-all ${
                       theme === 'light'
-                        ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10'
-                        : 'border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20 bg-slate-200/50 dark:bg-white/5'
+                        ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20'
+                        : 'border-slate-300 dark:border-white/10 hover:border-purple-400 bg-slate-200/50 dark:bg-white/5'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-300/40 flex items-center justify-center text-amber-600">
-                        <Sun className="w-4 h-4" />
+                      <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300/40 flex items-center justify-center text-amber-600">
+                        <Sun className="w-5 h-5" />
                       </div>
                       {theme === 'light' && (
-                        <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center text-white">
-                          <Check className="w-3 h-3" />
+                        <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center text-white shadow-md">
+                          <Check className="w-3.5 h-3.5" />
                         </div>
                       )}
                     </div>
-                    <div className="w-full h-12 bg-gradient-to-r from-slate-200 via-slate-100 to-white rounded-lg border border-slate-300 p-2 flex items-center gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-purple-600" />
-                      <div className="w-12 h-2 rounded bg-slate-700" />
-                      <div className="w-6 h-2 rounded bg-slate-400" />
+                    <div className="w-full h-14 bg-gradient-to-r from-slate-200 via-slate-100 to-white rounded-xl border border-slate-300 p-3 flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-purple-600" />
+                      <div className="w-16 h-2.5 rounded bg-slate-700" />
+                      <div className="w-8 h-2.5 rounded bg-slate-400" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold block">Soft Light</span>
-                      <span className="text-xs text-muted-foreground">Eye-friendly soft slate theme with clear text contrast</span>
-                    </div>
-                  </button>
-
-                  {/* System Preference */}
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      setTheme('system');
-                      toast.success('Theme set to System Default');
-                    }}
-                    className={`p-4 rounded-xl text-left space-y-3 relative overflow-hidden border-2 transition-all ${
-                      theme === 'system'
-                        ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10'
-                        : 'border-slate-300 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/20 bg-slate-200/50 dark:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400">
-                        <Monitor className="w-4 h-4" />
-                      </div>
-                      {theme === 'system' && (
-                        <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center text-white">
-                          <Check className="w-3 h-3" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="w-full h-12 bg-gradient-to-r from-gray-900 via-gray-500 to-gray-100 rounded-lg border border-white/10 p-2 flex items-center gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-blue-500" />
-                      <div className="w-12 h-2 rounded bg-white/40" />
-                      <div className="w-6 h-2 rounded bg-white/20" />
-                    </div>
-                    <div>
-                      <span className="text-sm font-semibold block">System Sync</span>
-                      <span className="text-xs text-muted-foreground">Matches your operating system mode</span>
+                      <span className="text-base font-bold block">Soft Light</span>
+                      <span className="text-xs text-muted-foreground">Eye-friendly soft slate theme with crisp text contrast</span>
                     </div>
                   </button>
                 </div>
