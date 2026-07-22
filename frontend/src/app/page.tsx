@@ -180,7 +180,7 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: idx * 0.06 }}
-              className="glass-card p-6 text-left hover:-translate-y-1 transition-transform duration-300"
+              className="glass-card p-6 text-left hover:-translate-y-1.5 transition-all duration-300 rounded-3xl overflow-hidden border border-white/10"
             >
               <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
               <p className="text-muted-foreground text-sm">{feature.desc}</p>
