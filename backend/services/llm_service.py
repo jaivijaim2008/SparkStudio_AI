@@ -81,61 +81,49 @@ class LLMService:
         prompt: str,
         system_prompt: Optional[str] = None,
     ) -> str:
-        """Internal retry loop — runs inside the semaphore."""
-        last_error: Optional[Exception] = None
+        """Internal retry loop with provider fallback — runs inside the semaphore."""
+        # Determine the order of providers to try
+        primary_provider = self._provider
+        providers_to_try = [primary_provider]
+        
+        alternatives = ["gemini", "groq", "openai", "openrouter", "ollama"]
+        for alt in alternatives:
+            if alt not in providers_to_try:
+                # Check if the alternative provider has keys/config configured
+                if alt == "gemini" and settings.gemini_keys:
+                    providers_to_try.append(alt)
+                elif alt == "groq" and settings.groq_keys:
+                    providers_to_try.append(alt)
+                elif alt == "openai" and settings.OPENAI_API_KEY:
+                    providers_to_try.append(alt)
+                elif alt == "openrouter" and settings.OPENROUTER_API_KEY:
+                    providers_to_try.append(alt)
+                elif alt == "ollama":
+                    providers_to_try.append(alt)
 
-        for attempt in range(1, self.MAX_RETRIES + 1):
+        last_error: Optional[Exception] = None
+        
+        for provider in providers_to_try:
+            logger.info("Attempting generation using LLM provider: %s", provider)
+            # Try to generate using the selected provider
             try:
-                if self._provider == "ollama":
+                if provider == "ollama":
                     return await self._generate_ollama(prompt, system_prompt)
-                elif self._provider == "openai":
+                elif provider == "openai":
                     return await self._generate_openai(prompt, system_prompt)
-                elif self._provider == "gemini":
+                elif provider == "gemini":
                     return await self._generate_gemini(prompt, system_prompt)
-                elif self._provider == "groq":
+                elif provider == "groq":
                     return await self._generate_groq(prompt, system_prompt)
-                elif self._provider == "openrouter":
+                elif provider == "openrouter":
                     return await self._generate_openrouter(prompt, system_prompt)
-                else:
-                    raise ValueError(f"Unsupported LLM provider: {self._provider}")
-            except httpx.HTTPStatusError as exc:
-                # Don't retry on auth/config errors — fail immediately
-                if exc.response.status_code in (400, 401, 403):
-                    error_body = exc.response.text[:300]
-                    logger.error(
-                        "LLM call failed with %d (non-retryable): %s",
-                        exc.response.status_code, error_body,
-                    )
-                    raise RuntimeError(
-                        f"LLM API error {exc.response.status_code}: {error_body}"
-                    ) from exc
-                # Rate limit (429): use Retry-After header if available
-                if exc.response.status_code == 429:
-                    retry_after = exc.response.headers.get("retry-after")
-                    wait = float(retry_after) if retry_after else min(self.BACKOFF_BASE ** attempt, 30)
-                    logger.warning(
-                        "Rate limited (429). Waiting %.1fs (attempt %d/%d)…",
-                        wait, attempt, self.MAX_RETRIES,
-                    )
-                else:
-                    wait = min(self.BACKOFF_BASE ** attempt, 30)
-                    logger.warning(
-                        "LLM call attempt %d/%d failed (%d). Retrying in %.1fs…",
-                        attempt, self.MAX_RETRIES, exc.response.status_code, wait,
-                    )
-                last_error = exc
-                await asyncio.sleep(wait)
             except Exception as exc:
+                logger.warning("LLM provider %s failed: %s", provider, exc)
                 last_error = exc
-                wait = min(self.BACKOFF_BASE ** attempt, 30)
-                logger.warning(
-                    "LLM call attempt %d/%d failed (%s). Retrying in %.1fs…",
-                    attempt, self.MAX_RETRIES, str(exc)[:120], wait,
-                )
-                await asyncio.sleep(wait)
+                # Continue to the next provider in the fallback chain
 
         raise RuntimeError(
-            f"LLM generation failed after {self.MAX_RETRIES} attempts: {last_error}"
+            f"LLM generation failed for all attempted providers {providers_to_try}. Last error: {last_error}"
         )
 
     # ── Ollama ──────────────────────────────────────────────────────────
@@ -199,16 +187,16 @@ class LLMService:
     async def _generate_gemini(
         self, prompt: str, system_prompt: Optional[str]
     ) -> str:
-        """Call the Google Gemini ``generateContent`` API."""
-        if not settings.GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY is not set but LLM_PROVIDER is 'gemini'")
+        """Call the Google Gemini ``generateContent`` API with key fallback."""
+        keys = settings.gemini_keys
+        if not keys:
+            raise ValueError("No GEMINI_API_KEY configured. Add at least one key to .env")
 
-        model_id = self._model if self._model != "qwen2.5:7b" else "gemini-2.0-flash"
-        url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}"
-            f":generateContent?key={settings.GEMINI_API_KEY}"
-        )
-
+        # Map legacy/unsupported models to gemini-flash-latest (resolves to the latest stable Flash model)
+        model_id = self._model
+        if model_id in ["qwen2.5:7b", "llama-3.3-70b-versatile", "gemini-1.5-flash", "gemini-2.0-flash"]:
+            model_id = "gemini-flash-latest"
+        
         contents: list[dict] = []
         if system_prompt:
             contents.append({"role": "user", "parts": [{"text": f"[System Instructions]\n{system_prompt}"}]})
@@ -223,15 +211,32 @@ class LLMService:
             },
         }
 
-        logger.debug("Gemini request → model=%s", model_id)
-        response = await self._client.post(url, json=payload, timeout=self.timeout)
-        response.raise_for_status()
+        last_error = None
+        for idx, api_key in enumerate(keys):
+            url = (
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}"
+                f":generateContent?key={api_key}"
+            )
+            logger.debug("Gemini request → model=%s (using key index %d)", model_id, idx)
+            try:
+                response = await self._client.post(url, json=payload, timeout=self.timeout)
+                response.raise_for_status()
+                data = response.json()
+                try:
+                    return data["candidates"][0]["content"]["parts"][0]["text"]
+                except (KeyError, IndexError) as exc:
+                    raise RuntimeError(f"Unexpected Gemini response structure: {json.dumps(data)[:300]}") from exc
+            except httpx.HTTPStatusError as exc:
+                logger.warning(
+                    "Gemini call with key index %d failed (%d). Error: %s",
+                    idx, exc.response.status_code, exc.response.text[:200]
+                )
+                last_error = exc
+            except Exception as exc:
+                logger.warning("Gemini call with key index %d failed: %s", idx, exc)
+                last_error = exc
 
-        data = response.json()
-        try:
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        except (KeyError, IndexError) as exc:
-            raise RuntimeError(f"Unexpected Gemini response structure: {json.dumps(data)[:300]}") from exc
+        raise RuntimeError(f"All configured Gemini API keys failed. Last error: {last_error}")
 
     # ── Groq ────────────────────────────────────────────────────────────
 

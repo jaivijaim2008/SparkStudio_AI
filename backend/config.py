@@ -39,6 +39,10 @@ class Settings(BaseSettings):
         default="",
         description="Google Gemini API key (required when LLM_PROVIDER=gemini)",
     )
+    GEMINI_API_KEY_2: str = Field(
+        default="",
+        description="Google Gemini API key #2 (optional, for fallback)",
+    )
     GROQ_API_KEY: str = Field(default="", description="Groq API key #1")
     GROQ_API_KEY_2: str = Field(default="", description="Groq API key #2 (optional, for key rotation)")
     GROQ_API_KEY_3: str = Field(default="", description="Groq API key #3 (optional, for key rotation)")
@@ -87,6 +91,15 @@ class Settings(BaseSettings):
             self.GROQ_API_KEY_3,
             self.GROQ_API_KEY_4,
             self.GROQ_API_KEY_5,
+        ]
+        return [k for k in candidates if k.strip()]
+
+    @property
+    def gemini_keys(self) -> list[str]:
+        """Return all configured Gemini API keys (filters out empty strings)."""
+        candidates = [
+            self.GEMINI_API_KEY,
+            self.GEMINI_API_KEY_2,
         ]
         return [k for k in candidates if k.strip()]
 
