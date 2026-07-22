@@ -311,3 +311,33 @@ async def delete_project(project_id: str):
         return {"status": "ok", "message": "Project deleted successfully"}
     raise HTTPException(status_code=404, detail="Project not found")
 
+
+class YouTubeSummarizeRequest(BaseModel):
+    url: str
+
+
+@router.post("/youtube/summarize")
+async def summarize_youtube(request_data: YouTubeSummarizeRequest, request: Request):
+    """
+    Extract transcript from a YouTube video URL and generate an AI summary.
+    """
+    from backend.services.youtube_service import generate_youtube_summary
+    
+    if not request_data.url or not request_data.url.strip():
+        raise HTTPException(status_code=400, detail="YouTube video URL is required.")
+        
+    client = getattr(request.app.state, "http_client", None)
+    
+    try:
+        if client:
+            result = await generate_youtube_summary(client, request_data.url)
+        else:
+            async with httpx.AsyncClient(timeout=90.0) as temp_client:
+                result = await generate_youtube_summary(temp_client, request_data.url)
+        return result
+    except ValueError as val_err:
+        raise HTTPException(status_code=400, detail=str(val_err))
+    except Exception as exc:
+        logger.error(f"Error summarizing YouTube video: {exc}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate summary: {str(exc)}")
+
