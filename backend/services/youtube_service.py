@@ -8,6 +8,7 @@ summaries using LLMService.
 
 import re
 import logging
+import asyncio
 from typing import Dict, Any, Optional
 import httpx
 
@@ -187,6 +188,65 @@ This video ({total_words} words transcript analyzed) provides essential insights
     }
 
 
+async def summarize_chunks(
+    llm: LLMService,
+    transcript_text: str,
+    video_title: str
+) -> str:
+    """
+    Summarize a long transcript in chunks to avoid rate limits (TPM limits) of free providers like Groq.
+    """
+    words = transcript_text.split()
+    chunk_size = 1200 # ~1500 tokens
+    chunks = [" ".join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
+    
+    logger.info(f"Splitting transcript into {len(chunks)} chunks for summarization.")
+    
+    chunk_summaries = []
+    for idx, chunk in enumerate(chunks, 1):
+        chunk_prompt = (
+            f"Summarize the following section of the YouTube video '{video_title}':\n\n"
+            f"Section {idx}/{len(chunks)} Transcript:\n{chunk}\n\n"
+            f"Provide a brief bulleted summary of this section."
+        )
+        try:
+            summary = await llm.generate(
+                prompt=chunk_prompt,
+                system_prompt="You are an assistant summarizing a section of a transcript. Keep it concise."
+            )
+            chunk_summaries.append(summary.strip())
+            # Wait a small delay to avoid hitting TPM rate limit on subsequent requests
+            await asyncio.sleep(2.0)
+        except Exception as e:
+            logger.warning(f"Failed to summarize chunk {idx}: {e}")
+            
+    if not chunk_summaries:
+        raise ValueError("Failed to summarize any of the transcript chunks.")
+        
+    # Combine the chunk summaries
+    combined_summaries_text = "\n\n".join(
+        [f"--- Section {idx} Summary ---\n{s}" for idx, s in enumerate(chunk_summaries, 1)]
+    )
+    
+    final_system_prompt = (
+        "You are an expert AI Video Content Summarizer. Your goal is to combine multiple section summaries "
+        "of a YouTube video into a unified, cohesive, and beginner-friendly final summary.\n\n"
+        "Formatting Guidelines:\n"
+        "1. Start with a '### 📌 Video Overview' section (2-3 simple, clear sentences).\n"
+        "2. Include a '### 💡 Key Takeaways & Important Points' section using bullet points. Bold important key terms.\n"
+        "3. Include a '### 🎯 Beginner's Summary & Takeaway' section highlighting the main actionable message.\n"
+        "4. Keep the wording clear, engaging, and free of unnecessary fluff."
+    )
+    
+    final_prompt = (
+        f"Combine the following section summaries of the video '{video_title}' into a single unified summary:\n\n"
+        f"{combined_summaries_text}\n\n"
+        f"Generate the formatted unified summary now."
+    )
+    
+    return await llm.generate(prompt=final_prompt, system_prompt=final_system_prompt)
+
+
 async def generate_youtube_summary(
     client: httpx.AsyncClient,
     youtube_url: str
@@ -247,7 +307,13 @@ async def generate_youtube_summary(
     
     llm = LLMService(client)
     try:
-        raw_summary = await llm.generate(prompt=prompt, system_prompt=system_prompt)
+        # If the transcript is long and using Groq, chunk it to avoid TPM rate limits
+        words = transcript_text.split()
+        if len(words) > 1500 and settings.LLM_PROVIDER == "groq":
+            logger.info("Transcript exceeds 1500 words and LLM_PROVIDER is groq. Using chunk-based summarization.")
+            raw_summary = await summarize_chunks(llm, transcript_text, video_title)
+        else:
+            raw_summary = await llm.generate(prompt=prompt, system_prompt=system_prompt)
         
         # Parse bullet points for key takeaways list if possible
         takeaways = []
