@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'dark' | 'light' | 'system';
+export type Theme = 'dark' | 'light' | 'system';
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -16,7 +16,7 @@ type ThemeProviderState = {
 };
 
 const initialState: ThemeProviderState = {
-  theme: 'dark', // Default to dark for this premium SaaS
+  theme: 'dark',
   setTheme: () => null,
 };
 
@@ -28,16 +28,54 @@ export function ThemeProvider({
   storageKey = 'sparkstudio-ui-theme',
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
+  const [theme, setThemeState] = useState<Theme>('dark');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    const saved = localStorage.getItem(storageKey) as Theme | null;
+    if (saved && (saved === 'dark' || saved === 'light' || saved === 'system')) {
+      setThemeState(saved);
+    } else {
+      setThemeState(defaultTheme);
+    }
+  }, [defaultTheme, storageKey]);
+
+  useEffect(() => {
+    if (!mounted) return;
     const root = window.document.documentElement;
-    root.classList.add('dark');
-  }, []);
+
+    const applyTheme = (t: Theme) => {
+      root.classList.remove('light', 'dark');
+
+      if (t === 'system') {
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light';
+        root.classList.add(systemTheme);
+      } else {
+        root.classList.add(t);
+      }
+    };
+
+    applyTheme(theme);
+    localStorage.setItem(storageKey, theme);
+
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = () => applyTheme('system');
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+  }, [theme, storageKey, mounted]);
+
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+  };
 
   const value = {
-    theme: 'dark' as Theme,
-    setTheme: () => {},
+    theme,
+    setTheme,
   };
 
   return (
@@ -53,3 +91,4 @@ export const useTheme = () => {
     throw new Error('useTheme must be used within a ThemeProvider');
   return context;
 };
+
