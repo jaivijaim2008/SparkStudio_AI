@@ -294,9 +294,9 @@ export default function LandingPage() {
               </div>
               <ul className="space-y-3.5 mb-8">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm font-medium text-slate-300">
+                  <li key={f} className="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-200">
                     <div className="w-5 h-5 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center shrink-0">
-                      <Check className="w-3 h-3 text-purple-400" />
+                      <Check className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                     </div>
                     {f}
                   </li>
@@ -307,7 +307,7 @@ export default function LandingPage() {
                 className={`block w-full text-center py-3.5 rounded-full font-semibold transition-all shadow-md ${
                   plan.featured
                     ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] shadow-purple-500/30'
-                    : 'bg-white/10 border border-white/15 hover:bg-white/20 text-white hover:scale-[1.02] active:scale-[0.98]'
+                    : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white border border-slate-300 dark:border-white/15 hover:scale-[1.02] active:scale-[0.98]'
                 }`}
               >
                 {plan.cta}
