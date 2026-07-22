@@ -84,8 +84,25 @@ def fetch_transcript(video_id: str) -> str:
     Fetch transcript/captions for a YouTube video using youtube-transcript-api.
     Raises ValueError with user-friendly error message on failure.
     """
+    import os
+    import http.cookiejar
+    import requests
+
+    session = None
+    cookies_path = getattr(settings, "YOUTUBE_COOKIES_PATH", "")
+    if cookies_path and os.path.exists(cookies_path):
+        try:
+            session = requests.Session()
+            cookie_jar = http.cookiejar.MozillaCookieJar(cookies_path)
+            cookie_jar.load(ignore_discard=True, ignore_expires=True)
+            session.cookies = cookie_jar
+            logger.info(f"Loaded YouTube cookies from {cookies_path} for video {video_id}")
+        except Exception as e:
+            logger.error(f"Failed to load YouTube cookies from {cookies_path}: {e}")
+            session = None
+
     try:
-        ytt = YouTubeTranscriptApi()
+        ytt = YouTubeTranscriptApi(http_client=session)
         
         # Try fetching default transcript first
         try:
