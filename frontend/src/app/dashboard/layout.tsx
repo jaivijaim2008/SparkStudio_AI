@@ -34,7 +34,7 @@ export default function DashboardLayout({
 
     fetchSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user?.email) {
         localStorage.setItem('sparkstudio-user-email', session.user.email);
         setUser(session.user);
@@ -44,7 +44,9 @@ export default function DashboardLayout({
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      data?.subscription?.unsubscribe?.();
+    };
   }, []);
 
   // Close drawer on Escape key press
@@ -57,6 +59,18 @@ export default function DashboardLayout({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Prevent body scrolling when drawer is open
+  useEffect(() => {
+    if (isDrawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isDrawerOpen]);
 
   // Auto-close drawer on route change
   useEffect(() => {
@@ -80,9 +94,9 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-[#0a0a0f] text-gray-100 overflow-x-hidden relative">
+    <div className="h-screen w-screen flex flex-col bg-[#0a0a0f] text-gray-100 overflow-hidden relative">
       {/* Top Header with Hamburger Menu */}
-      <header className="sticky top-0 z-30 w-full h-16 bg-black/60 backdrop-blur-xl border-b border-white/10 px-4 md:px-6 flex items-center justify-between">
+      <header className="shrink-0 h-16 w-full bg-black/60 backdrop-blur-xl border-b border-white/10 px-4 md:px-6 flex items-center justify-between z-30">
         <div className="flex items-center gap-3 md:gap-4">
           <button
             onClick={() => setIsDrawerOpen(true)}
@@ -114,15 +128,19 @@ export default function DashboardLayout({
           {pathname !== '/dashboard/new' && (
             <Link
               href="/dashboard/new"
-              className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium text-xs md:text-sm transition-all shadow-md shadow-purple-500/20 hover:scale-105"
+              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium text-xs md:text-sm transition-all shadow-md shadow-purple-500/20 hover:scale-105"
             >
               <Plus className="w-4 h-4" />
-              <span>New Project</span>
+              <span className="hidden sm:inline">New Project</span>
             </Link>
           )}
 
           {user && (
-            <div className="flex items-center gap-2 pl-2 border-l border-white/10">
+            <button
+              onClick={() => setIsDrawerOpen(true)}
+              title="Open Navigation & Profile"
+              className="flex items-center gap-2 pl-2 border-l border-white/10 hover:opacity-80 transition-opacity"
+            >
               {user.user_metadata?.avatar_url ? (
                 <img 
                   src={user.user_metadata.avatar_url} 
@@ -134,7 +152,7 @@ export default function DashboardLayout({
                   <UserIcon className="w-4 h-4 text-purple-300" />
                 </div>
               )}
-            </div>
+            </button>
           )}
         </div>
       </header>
@@ -263,4 +281,5 @@ export default function DashboardLayout({
     </div>
   );
 }
+
 
