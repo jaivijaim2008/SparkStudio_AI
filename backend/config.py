@@ -61,7 +61,7 @@ class Settings(BaseSettings):
 
     # ── Application Behaviour ───────────────────────────────────────────
     DEMO_MODE: bool = Field(
-        default=True,
+        default=False,
         description="When True, agents return sample data instead of calling LLM",
     )
     CORS_ORIGINS: str = Field(

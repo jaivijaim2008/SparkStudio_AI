@@ -134,10 +134,7 @@ async def generate_project(project_id: str, request: Request):
             logger.warning(f"Failed to fetch project from Supabase: {e}")
 
     if not project_input:
-        if project_id == "demo-1234-5678":
-            project_input = ProjectInput(topic="AI replacing programmers", platform="YouTube Shorts", audience="Students", tone="Funny", language="English", video_length=60)
-        else:
-            raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Project not found")
             
     # Check if project is already completed
     existing_project = fake_db.get(project_id)
@@ -215,12 +212,7 @@ async def get_project(project_id: str):
         except Exception as e:
             logger.warning(f"Failed to get project from Supabase: {e}")
             
-    # 3. Fallback to sample data for demo if not found
-    import json
-    from pathlib import Path
-    sample_path = Path(__file__).parent.parent / "sample_data" / "sample_project.json"
-    if sample_path.exists():
-        return json.loads(sample_path.read_text())
+    # 3. Raise 404 if not found
     raise HTTPException(status_code=404, detail="Project not found")
 
 @router.get("/project/{project_id}/export")
@@ -239,13 +231,7 @@ async def export_project(project_id: str):
             logger.warning(f"Failed to get project for export from Supabase: {e}")
             
     if not project_data:
-        import json
-        from pathlib import Path
-        sample_path = Path(__file__).parent.parent / "sample_data" / "sample_project.json"
-        if sample_path.exists():
-            project_data = json.loads(sample_path.read_text())
-        else:
-            raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Project not found")
         
     import io
     pdf_bytes = ExportService.generate_pdf_report(project_data)
@@ -265,16 +251,7 @@ async def get_projects(email: Optional[str] = None):
     List all generated projects.
     """
     if not email:
-        # Not logged in - return only the public fresh demo project
-        return [
-            {
-                "id": "demo-1234-5678",
-                "topic": "AI replacing programmers",
-                "platform": "YouTube Shorts",
-                "status": "completed",
-                "created_at": "2026-07-19T00:00:00"
-            }
-        ]
+        return []
 
     projects_list = []
     
@@ -294,6 +271,8 @@ async def get_projects(email: Optional[str] = None):
                         "created_at": db_data.get("created_at", "")
                     })
                 return projects_list
+            else:
+                return []
         except Exception as e:
             logger.warning(f"Failed to list projects from Supabase: {e}")
 
