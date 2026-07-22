@@ -45,12 +45,12 @@ export default function ProjectResultPage() {
 
   const scheduledIndexRef = useRef<number | null>(null);
 
-  // Queue coordinator: load storyboard images sequentially (concurrency: 1) with a 1.5s cool-down
+  // Queue coordinator: load storyboard images in parallel batches (concurrency: 3) with a 200ms micro-stagger
   useEffect(() => {
     if (imageStatuses.length === 0) return;
     
     const activeCount = imageStatuses.filter(s => s === 'loading').length;
-    if (activeCount === 0) {
+    if (activeCount < 3) {
       const nextIdx = imageStatuses.findIndex(s => s === 'pending');
       if (nextIdx !== -1 && scheduledIndexRef.current !== nextIdx) {
         scheduledIndexRef.current = nextIdx;
@@ -61,7 +61,7 @@ export default function ProjectResultPage() {
             return next;
           });
           scheduledIndexRef.current = null;
-        }, 1500); // 1.5s cool-down between image requests to prevent rate limits
+        }, 200); // 200ms micro-stagger between parallel image requests
         
         return () => {
           clearTimeout(timer);

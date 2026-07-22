@@ -52,11 +52,12 @@ export function StoryboardImage({
       .trim();
 
     const encodedPrompt = encodeURIComponent(sanitizedPrompt.substring(0, 450));
+    const seed = (sceneNumber * 1337) + (retryCount * 42);
     const cacheBuster = retryCount > 0 ? `&r=${retryCount}` : '';
-    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=sana${cacheBuster}`;
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=sana&seed=${seed}${cacheBuster}`;
     
     setSrc(url);
-  }, [prompt, retryCount, shouldLoad]);
+  }, [prompt, sceneNumber, retryCount, shouldLoad]);
 
   // Watchdog timer: If loading hangs for more than 6s, manually trigger a retry
   useEffect(() => {
