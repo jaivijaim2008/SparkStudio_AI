@@ -115,8 +115,10 @@ html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark 
   color: #ffffff !important;
 }
 
-html.dark p, html.dark span,
-.dark p, .dark span {
+html.dark p,
+html.dark span:not(.text-white):not(.text-purple-400):not(.text-purple-300):not(.text-blue-400),
+.dark p, 
+.dark span:not(.text-white):not(.text-purple-400):not(.text-purple-300):not(.text-blue-400) {
   color: #cbd5e1;
 }
 

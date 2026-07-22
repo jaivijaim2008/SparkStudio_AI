@@ -209,14 +209,14 @@ export default function DashboardLayout({
                       key={item.name}
                       href={item.href}
                       onClick={() => setIsDrawerOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 relative ${
+                      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 relative font-medium ${
                         isActive 
-                          ? 'text-purple-700 dark:text-white font-semibold bg-purple-100 dark:bg-gradient-to-r dark:from-purple-500/20 dark:to-blue-500/10 border border-purple-300 dark:border-purple-500/30' 
-                          : 'text-slate-700 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-white/5'
+                          ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold shadow-lg shadow-purple-500/30' 
+                          : 'text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-white/10'
                       }`}
                     >
-                      <item.icon className={`w-5 h-5 ${isActive ? 'text-purple-600 dark:text-purple-400' : ''}`} />
-                      <span>{item.name}</span>
+                      <item.icon className={`w-5 h-5 ${isActive ? '!text-white' : 'text-slate-500 dark:text-gray-400'}`} />
+                      <span className={isActive ? '!text-white font-bold' : ''}>{item.name}</span>
                     </Link>
                   );
                 })}
