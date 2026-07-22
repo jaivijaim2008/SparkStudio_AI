@@ -32,7 +32,7 @@ html.light,
 html.light body,
 .light,
 .light body {
-  background-color: #f1f5f9 !important;
+  background-color: #f8fafc !important;
   color: #0f172a !important;
 }
 
@@ -41,8 +41,10 @@ html.light h1, html.light h2, html.light h3, html.light h4, html.light h5, html.
   color: #0f172a !important;
 }
 
-html.light p, html.light span:not(.text-purple-400):not(.text-purple-500):not(.text-purple-600):not(.text-blue-400),
-.light p, .light span:not(.text-purple-400):not(.text-purple-500):not(.text-purple-600):not(.text-blue-400) {
+html.light p, 
+html.light span:not(.text-purple-400):not(.text-purple-500):not(.text-purple-600):not(.text-blue-400):not(.text-blue-500):not(.text-white),
+.light p, 
+.light span:not(.text-purple-400):not(.text-purple-500):not(.text-purple-600):not(.text-blue-400):not(.text-blue-500):not(.text-white) {
   color: #334155;
 }
 
@@ -51,10 +53,29 @@ html.light .text-muted-foreground,
   color: #64748b !important;
 }
 
+html.light header,
+.light header {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light aside,
+.light aside {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light main,
+.light main {
+  background-color: #f8fafc !important;
+}
+
 html.light .glass-card,
 .light .glass-card {
   background-color: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
+  border: 1px solid #e2e8f0 !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
   color: #0f172a !important;
 }
@@ -63,6 +84,21 @@ html.light .glass,
 .light .glass {
   background-color: #ffffff !important;
   border: 1px solid #cbd5e1 !important;
+}
+
+html.light select,
+html.light input[type="text"],
+html.light input[type="email"],
+html.light input[type="password"],
+html.light textarea,
+.light select,
+.light input[type="text"],
+.light input[type="email"],
+.light input[type="password"],
+.light textarea {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
 }
 
 /* Dark Theme (Full Midnight Dark Website) */
@@ -87,6 +123,23 @@ html.dark p, html.dark span,
 html.dark .text-muted-foreground,
 .dark .text-muted-foreground {
   color: #94a3b8 !important;
+}
+
+html.dark header,
+.dark header {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark aside,
+.dark aside {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark main,
+.dark main {
+  background-color: #0a0a0f !important;
 }
 
 html.dark .glass-card,
