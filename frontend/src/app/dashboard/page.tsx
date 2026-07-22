@@ -190,12 +190,12 @@ export default function DashboardOverview() {
               >
                 <Link href={`/dashboard/project/${project.id}`} className="group block">
                   <div className="glass-card p-1 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-purple-500/10 group-hover:border-purple-500/50">
-                    <div className="h-32 rounded-xl bg-gradient-to-br from-purple-900/50 to-black relative overflow-hidden flex items-center justify-center p-4 text-center">
-                      <span className="font-bold text-lg text-white/90 line-clamp-2">{project.topic}</span>
+                    <div className="h-32 rounded-2xl bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/50 dark:to-black relative overflow-hidden flex items-center justify-center p-4 text-center">
+                      <span className="font-bold text-lg text-purple-900 dark:text-white/90 line-clamp-2">{project.topic}</span>
                     </div>
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium px-2 py-1 bg-white/5 rounded-md">{project.platform}</span>
+                        <span className="text-xs font-medium px-2 py-1 bg-slate-100 dark:bg-white/5 rounded-md">{project.platform}</span>
                         <span className="text-xs text-muted-foreground">{formatTimeAgo(project.created_at)}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-4">
@@ -214,8 +214,8 @@ export default function DashboardOverview() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: recentProjects.length * 0.08 }}
             >
-              <Link href="/dashboard/new" className="glass-card p-6 border-dashed flex flex-col items-center justify-center text-center h-full min-h-[240px] hover:bg-white/5 transition-colors">
-                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4">
+              <Link href="/dashboard/new" className="glass-card p-6 border-dashed border-slate-300 dark:border-white/10 flex flex-col items-center justify-center text-center h-full min-h-[240px] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center mb-4">
                   <Plus className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <h3 className="font-medium text-lg">New Project</h3>

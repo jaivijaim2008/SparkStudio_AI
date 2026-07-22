@@ -224,7 +224,7 @@ export default function NewProject() {
                 <YoutubeIcon className="w-6 h-6 text-red-500" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
                   YouTube Video Summarizer
                   <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-medium">
                     AI Powered
@@ -239,7 +239,7 @@ export default function NewProject() {
 
           {/* Input & Action Button */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-gray-200 block">Paste YouTube Video URL</label>
+            <label className="text-sm font-medium block">Paste YouTube Video URL</label>
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
                 <input
@@ -250,7 +250,7 @@ export default function NewProject() {
                     if (summaryError) setSummaryError(null);
                   }}
                   placeholder="https://www.youtube.com/watch?v=..."
-                  className="w-full p-3.5 pl-10 rounded-xl bg-white/5 border border-white/10 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all outline-none text-sm placeholder:text-muted-foreground/50 text-white"
+                  className="w-full p-3.5 pl-10 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all outline-none text-sm placeholder:text-muted-foreground/50 text-slate-900 dark:text-white"
                 />
                 <YoutubeIcon className="w-4 h-4 text-red-500/80 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -296,13 +296,13 @@ export default function NewProject() {
 
           {/* Loading Card State */}
           {isSummarizing && (
-            <div className="p-6 rounded-2xl bg-black/40 border border-purple-500/30 flex flex-col items-center justify-center space-y-3 text-center py-10 animate-pulse">
+            <div className="p-6 rounded-2xl bg-slate-50 dark:bg-black/40 border border-purple-500/30 flex flex-col items-center justify-center space-y-3 text-center py-10 animate-pulse">
               <div className="relative">
                 <div className="w-12 h-12 rounded-full border-2 border-purple-500/30 border-t-purple-500 animate-spin" />
                 <Sparkles className="w-5 h-5 text-purple-400 absolute inset-0 m-auto" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">Fetching Transcript & Analyzing Video</p>
+                <p className="text-sm font-semibold">Fetching Transcript & Analyzing Video</p>
                 <p className="text-xs text-muted-foreground mt-1">Generating concise, beginner-friendly key takeaways...</p>
               </div>
             </div>
@@ -313,22 +313,22 @@ export default function NewProject() {
             <motion.div
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="p-6 rounded-2xl bg-black/50 border border-purple-500/30 space-y-4 shadow-2xl shadow-purple-950/40 backdrop-blur-md"
+              className="p-6 rounded-2xl bg-slate-50 dark:bg-black/50 border border-purple-500/30 space-y-4 shadow-2xl shadow-purple-950/40 backdrop-blur-md"
             >
               {/* Header with Video Info & Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
                 <div className="flex items-center gap-3">
                   {summaryResult.thumbnail_url && (
                     <img
                       src={summaryResult.thumbnail_url}
                       alt={summaryResult.title}
-                      className="w-24 h-14 object-cover rounded-lg border border-white/10 shadow-md shrink-0"
+                      className="w-24 h-14 object-cover rounded-lg border border-slate-200 dark:border-white/10 shadow-md shrink-0"
                     />
                   )}
                   <div>
-                    <h3 className="text-base font-bold text-white line-clamp-1">{summaryResult.title}</h3>
+                    <h3 className="text-base font-bold line-clamp-1">{summaryResult.title}</h3>
                     {summaryResult.author_name && (
-                      <p className="text-xs text-purple-300/80">{summaryResult.author_name}</p>
+                      <p className="text-xs text-purple-600 dark:text-purple-300/80">{summaryResult.author_name}</p>
                     )}
                   </div>
                 </div>
@@ -337,18 +337,18 @@ export default function NewProject() {
                   <button
                     type="button"
                     onClick={handleCopySummary}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-medium text-gray-300 hover:text-white transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 text-xs font-medium text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white transition-all"
                   >
-                    {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
+                    {copied ? <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400 dark:text-gray-400" />}
                     {copied ? 'Copied' : 'Copy'}
                   </button>
 
                   <button
                     type="button"
                     onClick={handleUseAsTopic}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/40 hover:bg-purple-500/30 text-xs font-semibold text-purple-200 transition-all shadow-sm"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-purple-100 dark:bg-purple-500/20 border border-purple-200 dark:border-purple-500/40 hover:bg-purple-200 dark:hover:bg-purple-500/30 text-xs font-semibold text-purple-700 dark:text-purple-200 transition-all shadow-sm"
                   >
-                    <ArrowDownRight className="w-3.5 h-3.5 text-purple-300" />
+                    <ArrowDownRight className="w-3.5 h-3.5 text-purple-600 dark:text-purple-300" />
                     Use as Video Topic
                   </button>
                 </div>
@@ -360,9 +360,9 @@ export default function NewProject() {
                   {summaryResult.key_takeaways.slice(0, 3).map((takeaway, idx) => (
                     <span
                       key={idx}
-                      className="text-xs px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/25 text-purple-300 flex items-center gap-1.5 font-medium"
+                      className="text-xs px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/25 text-purple-700 dark:text-purple-300 flex items-center gap-1.5 font-medium"
                     >
-                      <FileText className="w-3 h-3 text-purple-400 shrink-0" />
+                      <FileText className="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" />
                       <span className="truncate max-w-[240px]">{takeaway}</span>
                     </span>
                   ))}
@@ -370,7 +370,7 @@ export default function NewProject() {
               )}
 
               {/* Scrollable Summary Body */}
-              <div className="max-h-[380px] overflow-y-auto pr-2 space-y-2 text-sm text-gray-200 scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-black/20">
+              <div className="max-h-[380px] overflow-y-auto pr-2 space-y-2 text-sm text-slate-700 dark:text-gray-200 scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-black/20">
                 {renderFormattedSummary(summaryResult.summary)}
               </div>
             </motion.div>
@@ -381,17 +381,17 @@ export default function NewProject() {
         <form onSubmit={handleSubmit} className="glass-card p-8 space-y-8">
           {/* Topic Input */}
           <div className="space-y-3" id="topic-input">
-            <label className="text-sm font-medium text-white flex items-center justify-between">
+            <label className="text-sm font-medium flex items-center justify-between">
               <span>What is your video about?</span>
               {formData.topic && (
-                <span className="text-xs text-purple-400 font-normal">Topic Ready</span>
+                <span className="text-xs text-purple-600 dark:text-purple-400 font-normal">Topic Ready</span>
               )}
             </label>
             <textarea
               value={formData.topic}
               onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
               placeholder="e.g. AI replacing programmers and what computer science students should do about it..."
-              className="w-full min-h-[120px] p-4 rounded-xl bg-white/5 border border-white/10 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all outline-none resize-none placeholder:text-muted-foreground/50 text-white"
+              className="w-full min-h-[120px] p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all outline-none resize-none placeholder:text-muted-foreground/50 text-slate-900 dark:text-white"
               maxLength={500}
             />
             <div className="flex justify-end">
@@ -413,7 +413,7 @@ export default function NewProject() {
                     className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 ${
                       isSelected 
                         ? 'bg-purple-500/20 border-purple-500/50 text-white shadow-lg shadow-purple-500/10' 
-                        : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10 hover:text-white'
+                        : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-muted-foreground hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <platform.icon className={`w-6 h-6 mb-2 ${isSelected ? 'text-purple-400' : ''}`} />
@@ -432,7 +432,7 @@ export default function NewProject() {
                 type="text"
                 value={formData.audience}
                 onChange={(e) => setFormData({ ...formData, audience: e.target.value })}
-                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500/50 outline-none transition-all text-white"
+                className="w-full p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-blue-500/50 outline-none transition-all text-slate-900 dark:text-white"
                 placeholder="e.g. Students, Beginners..."
               />
             </div>
@@ -442,19 +442,19 @@ export default function NewProject() {
               <select
                 value={formData.tone}
                 onChange={(e) => setFormData({ ...formData, tone: e.target.value })}
-                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500/50 outline-none transition-all appearance-none text-white"
+                className="w-full p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-blue-500/50 outline-none transition-all appearance-none text-slate-900 dark:text-white"
               >
-                <option value="Informative" className="bg-black">Informative</option>
-                <option value="Funny" className="bg-black">Funny & Engaging</option>
-                <option value="Professional" className="bg-black">Professional</option>
-                <option value="Controversial" className="bg-black">Controversial / Clicky</option>
-                <option value="Inspirational" className="bg-black">Inspirational</option>
+                <option value="Informative" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Informative</option>
+                <option value="Funny" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Funny & Engaging</option>
+                <option value="Professional" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Professional</option>
+                <option value="Controversial" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Controversial / Clicky</option>
+                <option value="Inspirational" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Inspirational</option>
               </select>
             </div>
           </div>
 
           {/* Generate Button */}
-          <div className="pt-6 border-t border-white/10 flex justify-end">
+          <div className="pt-6 border-t border-slate-200 dark:border-white/10 flex justify-end">
             <button
               type="submit"
               disabled={isGenerating || !formData.topic}
