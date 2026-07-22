@@ -277,8 +277,8 @@ export default function LandingPage() {
               transition={{ duration: 0.5, delay: idx * 0.1 }}
               className={`glass-card p-8 md:p-10 text-left relative overflow-hidden rounded-[28px] md:rounded-[32px] transition-all duration-300 hover:-translate-y-2 border backdrop-blur-2xl ${
                 plan.featured
-                  ? 'border-purple-500/60 bg-gradient-to-b from-purple-500/15 via-purple-500/5 to-black/40 shadow-2xl shadow-purple-500/20'
-                  : 'border-white/10 hover:border-purple-500/30 bg-black/40 hover:bg-black/60 shadow-xl'
+                  ? 'border-purple-500/60 bg-gradient-to-b from-purple-500/10 via-purple-500/5 to-purple-500/10 dark:from-purple-500/20 dark:via-purple-500/5 dark:to-black/40 shadow-2xl shadow-purple-500/20'
+                  : 'border-slate-200 dark:border-white/10 hover:border-purple-500/40 bg-white/90 dark:bg-black/40 shadow-xl'
               }`}
             >
               {plan.featured && (
@@ -294,11 +294,11 @@ export default function LandingPage() {
               </div>
               <ul className="space-y-3.5 mb-8">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm font-medium text-slate-700 dark:text-slate-200">
+                  <li key={f} className="flex items-center gap-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     <div className="w-5 h-5 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center shrink-0">
                       <Check className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                     </div>
-                    {f}
+                    <span>{f}</span>
                   </li>
                 ))}
               </ul>

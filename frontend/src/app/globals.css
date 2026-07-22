@@ -103,8 +103,9 @@ html.light h6 {
 }
 
 html.light p, 
+html.light li,
 html.light span:not(.text-purple-400):not(.text-purple-500):not(.text-purple-600):not(.text-blue-400):not(.text-blue-500):not(.text-white) {
-  color: #334155 !important;
+  color: #1e293b !important;
 }
 
 html.light .text-muted-foreground {
@@ -144,6 +145,7 @@ html.dark h6 {
 }
 
 html.dark p, 
+html.dark li,
 html.dark span:not(.text-white):not(.text-purple-400):not(.text-purple-300):not(.text-blue-400) {
   color: #cbd5e1 !important;
 }
