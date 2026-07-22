@@ -27,111 +27,82 @@
   }
 }
 
-/* Base Body Colors */
-body {
-  background-color: #0a0a0f;
-  color: #f8fafc;
-  min-height: 100vh;
-}
-
-html.dark body,
-.dark body {
-  background-color: #0a0a0f !important;
-  color: #f8fafc !important;
-}
-
+/* Light Theme (Full Light Website) */
+html.light,
 html.light body,
+.light,
 .light body {
   background-color: #f1f5f9 !important;
   color: #0f172a !important;
 }
 
-/* Midnight Dark Glass & Card Utilities */
-.dark .glass-card,
-html.dark .glass-card {
-  background-color: rgba(15, 15, 25, 0.75) !important;
+html.light h1, html.light h2, html.light h3, html.light h4, html.light h5, html.light h6,
+.light h1, .light h2, .light h3, .light h4, .light h5, .light h6 {
+  color: #0f172a !important;
+}
+
+html.light p, html.light span:not(.text-purple-400):not(.text-purple-500):not(.text-purple-600):not(.text-blue-400),
+.light p, .light span:not(.text-purple-400):not(.text-purple-500):not(.text-purple-600):not(.text-blue-400) {
+  color: #334155;
+}
+
+html.light .text-muted-foreground,
+.light .text-muted-foreground {
+  color: #64748b !important;
+}
+
+html.light .glass-card,
+.light .glass-card {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+}
+
+html.light .glass,
+.light .glass {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* Dark Theme (Full Midnight Dark Website) */
+html.dark,
+html.dark body,
+.dark,
+.dark body {
+  background-color: #0a0a0f !important;
+  color: #f8fafc !important;
+}
+
+html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6,
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: #ffffff !important;
+}
+
+html.dark p, html.dark span,
+.dark p, .dark span {
+  color: #cbd5e1;
+}
+
+html.dark .text-muted-foreground,
+.dark .text-muted-foreground {
+  color: #94a3b8 !important;
+}
+
+html.dark .glass-card,
+.dark .glass-card {
+  background-color: rgba(15, 15, 25, 0.85) !important;
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
   color: #f8fafc !important;
 }
 
-.dark .glass,
-html.dark .glass {
+html.dark .glass,
+.dark .glass {
   background-color: rgba(0, 0, 0, 0.4) !important;
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
-}
-
-.dark .glass-card h1,
-.dark .glass-card h2,
-.dark .glass-card h3,
-.dark .glass-card h4,
-.dark .glass-card h5,
-.dark .glass-card h6,
-html.dark .glass-card h1,
-html.dark .glass-card h2,
-html.dark .glass-card h3,
-html.dark .glass-card h4,
-html.dark .glass-card h5,
-html.dark .glass-card h6 {
-  color: #ffffff !important;
-}
-
-.dark .glass-card p,
-.dark .glass-card label,
-html.dark .glass-card p,
-html.dark .glass-card label {
-  color: #cbd5e1 !important;
-}
-
-.dark .glass-card .text-muted-foreground,
-html.dark .glass-card .text-muted-foreground {
-  color: #94a3b8 !important;
-}
-
-/* Soft Light Glass & Card Utilities */
-.light .glass-card,
-html.light .glass-card {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(203, 213, 225, 0.8) !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06) !important;
-  color: #0f172a !important;
-}
-
-.light .glass,
-html.light .glass {
-  background-color: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(203, 213, 225, 0.6) !important;
-}
-
-.light .glass-card h1,
-.light .glass-card h2,
-.light .glass-card h3,
-.light .glass-card h4,
-.light .glass-card h5,
-.light .glass-card h6,
-html.light .glass-card h1,
-html.light .glass-card h2,
-html.light .glass-card h3,
-html.light .glass-card h4,
-html.light .glass-card h5,
-html.light .glass-card h6 {
-  color: #0f172a !important;
-}
-
-.light .glass-card p,
-.light .glass-card label,
-html.light .glass-card p,
-html.light .glass-card label {
-  color: #334155 !important;
-}
-
-.light .glass-card .text-muted-foreground,
-html.light .glass-card .text-muted-foreground {
-  color: #64748b !important;
 }
 
 /* Custom Utility Overrides */
