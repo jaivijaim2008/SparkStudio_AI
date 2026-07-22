@@ -199,16 +199,16 @@ class LLMService:
     async def _generate_gemini(
         self, prompt: str, system_prompt: Optional[str]
     ) -> str:
-        """Call the Google Gemini ``generateContent`` API."""
-        if not settings.GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY is not set but LLM_PROVIDER is 'gemini'")
+        """Call the Google Gemini ``generateContent`` API with key fallback."""
+        keys = settings.gemini_keys
+        if not keys:
+            raise ValueError("No GEMINI_API_KEY configured. Add at least one key to .env")
 
-        model_id = self._model if self._model != "qwen2.5:7b" else "gemini-2.0-flash"
-        url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}"
-            f":generateContent?key={settings.GEMINI_API_KEY}"
-        )
-
+        # Map legacy/unsupported models to gemini-flash-latest (resolves to the latest stable Flash model)
+        model_id = self._model
+        if model_id in ["qwen2.5:7b", "llama-3.3-70b-versatile", "gemini-1.5-flash", "gemini-2.0-flash"]:
+            model_id = "gemini-flash-latest"
+        
         contents: list[dict] = []
         if system_prompt:
             contents.append({"role": "user", "parts": [{"text": f"[System Instructions]\n{system_prompt}"}]})
@@ -223,15 +223,32 @@ class LLMService:
             },
         }
 
-        logger.debug("Gemini request → model=%s", model_id)
-        response = await self._client.post(url, json=payload, timeout=self.timeout)
-        response.raise_for_status()
+        last_error = None
+        for idx, api_key in enumerate(keys):
+            url = (
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}"
+                f":generateContent?key={api_key}"
+            )
+            logger.debug("Gemini request → model=%s (using key index %d)", model_id, idx)
+            try:
+                response = await self._client.post(url, json=payload, timeout=self.timeout)
+                response.raise_for_status()
+                data = response.json()
+                try:
+                    return data["candidates"][0]["content"]["parts"][0]["text"]
+                except (KeyError, IndexError) as exc:
+                    raise RuntimeError(f"Unexpected Gemini response structure: {json.dumps(data)[:300]}") from exc
+            except httpx.HTTPStatusError as exc:
+                logger.warning(
+                    "Gemini call with key index %d failed (%d). Error: %s",
+                    idx, exc.response.status_code, exc.response.text[:200]
+                )
+                last_error = exc
+            except Exception as exc:
+                logger.warning("Gemini call with key index %d failed: %s", idx, exc)
+                last_error = exc
 
-        data = response.json()
-        try:
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        except (KeyError, IndexError) as exc:
-            raise RuntimeError(f"Unexpected Gemini response structure: {json.dumps(data)[:300]}") from exc
+        raise RuntimeError(f"All configured Gemini API keys failed. Last error: {last_error}")
 
     # ── Groq ────────────────────────────────────────────────────────────
 
