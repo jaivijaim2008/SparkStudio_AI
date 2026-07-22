@@ -83,7 +83,7 @@ async def fetch_video_metadata(client: httpx.AsyncClient, video_id: str) -> Dict
 def fetch_transcript(video_id: str) -> str:
     """
     Fetch transcript/captions for a YouTube video using youtube-transcript-api.
-    Raises ValueError with user-friendly error message on failure.
+    Falls back to a public URL-based transcript extractor if local fetching fails (e.g. cloud IP blocked).
     """
     import os
     import http.cookiejar
@@ -132,23 +132,32 @@ def fetch_transcript(video_id: str) -> str:
             
         return full_text
         
-    except (TranscriptsDisabled, NoTranscriptFound) as exc:
-        logger.warning(f"Transcripts disabled or not found for {video_id}: {exc}")
-        raise ValueError(
-            "Captions/transcripts are not available for this YouTube video. "
-            "Please make sure the video has public subtitles enabled or try another video link."
-        )
-    except VideoUnavailable as exc:
-        logger.warning(f"Video {video_id} is unavailable: {exc}")
-        raise ValueError(
-            "The YouTube video is unavailable or private. Please check the URL and try again."
-        )
-    except ValueError:
-        raise
     except Exception as exc:
-        logger.error(f"Failed to extract transcript for {video_id}: {exc}")
+        logger.warning(
+            "youtube-transcript-api failed for video %s: %s. Trying public transcript fallback...",
+            video_id, exc
+        )
+        # Fallback to public URL extractor
+        try:
+            url = f"https://youtube-transcript.ai/transcript/{video_id}.txt"
+            res = requests.get(url, timeout=15)
+            if res.status_code == 200 and res.text:
+                raw_text = res.content.decode("utf-8")
+                # Clean timestamps and headers
+                if "## Transcript" in raw_text:
+                    raw_text = raw_text.split("## Transcript", 1)[1]
+                # Remove timestamps like [0:02]
+                cleaned = re.sub(r'\[\d+:\d+(?::\d+)?\]', '', raw_text)
+                lines = [line.strip() for line in cleaned.split("\n") if line.strip()]
+                full_text = " ".join(lines)
+                if full_text.strip():
+                    logger.info("Successfully fetched transcript from fallback service")
+                    return full_text
+        except Exception as fallback_exc:
+            logger.error("Fallback transcript service failed: %s", fallback_exc)
+
         raise ValueError(
-            f"Could not extract transcript from YouTube video. Please ensure the link is correct."
+            "Could not extract transcript from YouTube video. Please ensure the link is correct."
         )
 
 
@@ -229,13 +238,15 @@ async def summarize_chunks(
     )
     
     final_system_prompt = (
-        "You are an expert AI Video Content Summarizer. Your goal is to combine multiple section summaries "
-        "of a YouTube video into a unified, cohesive, and beginner-friendly final summary.\n\n"
+        "You are an expert AI Video Content Summarizer and Blog Writer. Your goal is to combine multiple section summaries "
+        "of a YouTube video into a unified summary and a highly detailed, professional blog post/article.\n\n"
         "Formatting Guidelines:\n"
         "1. Start with a '### 📌 Video Overview' section (2-3 simple, clear sentences).\n"
         "2. Include a '### 💡 Key Takeaways & Important Points' section using bullet points. Bold important key terms.\n"
         "3. Include a '### 🎯 Beginner's Summary & Takeaway' section highlighting the main actionable message.\n"
-        "4. Keep the wording clear, engaging, and free of unnecessary fluff."
+        "4. Include a '### 📝 Detailed Blog Post / Article' section. Write a cohesive, comprehensive, and engaging article "
+        "(300-500 words) with subheadings explaining the concepts in detail. Use a professional, informative tone suitable for publishing.\n"
+        "5. Keep the wording clear, engaging, and free of unnecessary fluff."
     )
     
     final_prompt = (
@@ -288,14 +299,15 @@ async def generate_youtube_summary(
         }
         
     system_prompt = (
-        "You are an expert AI Video Content Summarizer. Your goal is to generate a concise, "
-        "easy-to-understand summary in simple English so that even beginners can quickly understand "
-        "the key ideas and main takeaways of a YouTube video.\n\n"
+        "You are an expert AI Video Content Summarizer and Blog Writer. Your goal is to generate a concise, "
+        "easy-to-understand summary followed by a highly detailed, professional blog post/article based on the YouTube video.\n\n"
         "Formatting Guidelines:\n"
         "1. Start with a '### 📌 Video Overview' section (2-3 simple, clear sentences).\n"
         "2. Include a '### 💡 Key Takeaways & Important Points' section using bullet points. Bold important key terms.\n"
         "3. Include a '### 🎯 Beginner's Summary & Takeaway' section highlighting the main actionable message.\n"
-        "4. Keep the wording clear, engaging, and free of unnecessary fluff."
+        "4. Include a '### 📝 Detailed Blog Post / Article' section. Write a cohesive, comprehensive, and engaging article "
+        "(300-500 words) with subheadings explaining the concepts in detail. Use a professional, informative tone suitable for publishing.\n"
+        "5. Keep the wording clear, engaging, and free of unnecessary fluff."
     )
     
     prompt = (
