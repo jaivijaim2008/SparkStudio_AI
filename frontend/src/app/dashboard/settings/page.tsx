@@ -61,7 +61,7 @@ export default function SettingsPage() {
                 <div className="space-y-4 max-w-md">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Default Output Language</label>
-                    <select className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white focus:border-purple-500 focus:outline-none transition-colors">
+                    <select className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:border-purple-500 focus:outline-none transition-colors">
                       <option value="en">English (US)</option>
                       <option value="en-uk">English (UK)</option>
                       <option value="es">Spanish</option>
@@ -71,7 +71,7 @@ export default function SettingsPage() {
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Default Content Tone</label>
-                    <select className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white focus:border-purple-500 focus:outline-none transition-colors">
+                    <select className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:border-purple-500 focus:outline-none transition-colors">
                       <option value="educational">Educational & Professional</option>
                       <option value="viral">Viral & High Energy</option>
                       <option value="storytelling">Cinematic Storytelling</option>
@@ -166,22 +166,22 @@ export default function SettingsPage() {
                 <h3 className="text-lg font-bold font-outfit">Export Preferences</h3>
                 
                 <div className="space-y-3">
-                  <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/10">
-                    <input type="checkbox" defaultChecked className="rounded border-white/20 bg-black/50 text-purple-600 focus:ring-purple-500 focus:ring-offset-black" />
+                  <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-white/10">
+                    <input type="checkbox" defaultChecked className="rounded border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-black/50 text-purple-600 focus:ring-purple-500 focus:ring-offset-white dark:focus:ring-offset-black" />
                     <div>
                       <p className="text-sm font-semibold">Include Subtitles (SRT/VTT)</p>
                       <p className="text-xs text-muted-foreground">Always include subtitle files in the ZIP export</p>
                     </div>
                   </label>
-                  <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/10">
-                    <input type="checkbox" defaultChecked className="rounded border-white/20 bg-black/50 text-purple-600 focus:ring-purple-500 focus:ring-offset-black" />
+                  <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-white/10">
+                    <input type="checkbox" defaultChecked className="rounded border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-black/50 text-purple-600 focus:ring-purple-500 focus:ring-offset-white dark:focus:ring-offset-black" />
                     <div>
                       <p className="text-sm font-semibold">Include Storyboard Data</p>
                       <p className="text-xs text-muted-foreground">Export visual directions and image prompts</p>
                     </div>
                   </label>
-                  <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/10">
-                    <input type="checkbox" className="rounded border-white/20 bg-black/50 text-purple-600 focus:ring-purple-500 focus:ring-offset-black" />
+                  <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-white/10">
+                    <input type="checkbox" className="rounded border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-black/50 text-purple-600 focus:ring-purple-500 focus:ring-offset-white dark:focus:ring-offset-black" />
                     <div>
                       <p className="text-sm font-semibold">Auto-download on complete</p>
                       <p className="text-xs text-muted-foreground">Automatically save ZIP when pipeline finishes</p>
@@ -196,7 +196,7 @@ export default function SettingsPage() {
                 <h3 className="text-lg font-bold font-outfit">Notification Settings</h3>
                 
                 <div className="space-y-3">
-                  <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+                  <label className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
                     <div>
                       <p className="text-sm font-semibold">Browser Notifications</p>
                       <p className="text-xs text-muted-foreground">Get alerted when a project finishes generation</p>
@@ -205,12 +205,12 @@ export default function SettingsPage() {
                       <span className="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform translate-x-4"></span>
                     </div>
                   </label>
-                  <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+                  <label className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
                     <div>
                       <p className="text-sm font-semibold">Email Updates</p>
                       <p className="text-xs text-muted-foreground">Receive weekly analytics and feature updates</p>
                     </div>
-                    <div className="relative inline-block w-10 h-6 rounded-full bg-white/20 cursor-pointer">
+                    <div className="relative inline-block w-10 h-6 rounded-full bg-slate-300 dark:bg-white/20 cursor-pointer">
                       <span className="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform"></span>
                     </div>
                   </label>
@@ -221,7 +221,7 @@ export default function SettingsPage() {
             {activeTab === 'help' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                 <h3 className="text-lg font-bold font-outfit">Documentation & Help</h3>
-                <div className="space-y-2 text-sm text-white/90 bg-white/5 p-4 rounded-xl border border-white/10">
+                <div className="space-y-2 text-sm text-slate-700 dark:text-white/90 bg-slate-50 dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10">
                   <p><strong>SparkStudio AI</strong> runs a lightning-fast parallel multi-agent loop:</p>
                   <ol className="list-decimal pl-5 space-y-1 mt-2 text-muted-foreground marker:text-purple-400">
                     <li><strong>Research Agent</strong> scans trends and pain points.</li>
@@ -236,7 +236,7 @@ export default function SettingsPage() {
 
             {/* Save Button */}
             {activeTab !== 'help' && (
-              <div className="pt-6 mt-6 border-t border-white/10 flex justify-end">
+              <div className="pt-6 mt-6 border-t border-slate-200 dark:border-white/10 flex justify-end">
                 <button
                   type="submit"
                   className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 transition-all font-semibold shadow-lg shadow-purple-500/20 hover:scale-105 active:scale-95"

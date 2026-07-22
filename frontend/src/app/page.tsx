@@ -45,7 +45,7 @@ export default function LandingPage() {
       <div className="absolute -bottom-8 left-20 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 dark:opacity-30 animate-blob" style={{ animationDelay: '4s' }}></div>
 
       {/* Navbar */}
-      <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto border-b border-white/5">
+      <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto border-b border-slate-200 dark:border-white/5">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-white" />
@@ -58,11 +58,11 @@ export default function LandingPage() {
           
           {sessionUser ? (
             <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+              <Link href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1 bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10">
                 <Bot className="w-4 h-4 text-purple-400" />
                 Dashboard
               </Link>
-              <div className="flex items-center gap-2 border-l border-white/10 pl-4">
+              <div className="flex items-center gap-2 border-l border-slate-200 dark:border-white/10 pl-4">
                 {sessionUser.user_metadata?.avatar_url ? (
                   <img 
                     src={sessionUser.user_metadata.avatar_url} 
@@ -74,10 +74,10 @@ export default function LandingPage() {
                     <User className="w-3.5 h-3.5 text-purple-300" />
                   </div>
                 )}
-                <span className="text-xs text-white/70 max-w-[120px] truncate hidden sm:inline">{sessionUser.email}</span>
+                <span className="text-xs text-slate-600 dark:text-white/70 max-w-[120px] truncate hidden sm:inline">{sessionUser.email}</span>
                 <button 
                   onClick={handleSignOut}
-                  className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-colors ml-1"
+                  className="p-1.5 rounded-lg text-slate-400 dark:text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-colors ml-1"
                   title="Sign Out"
                 >
                   <LogOut className="w-4 h-4" />
@@ -101,10 +101,10 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm mb-8"
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-sm mb-8"
         >
           <span className="flex h-2 w-2 rounded-full bg-purple-500 animate-pulse"></span>
-          <span className="text-xs font-medium text-purple-300">v1.0 Now Live</span>
+          <span className="text-xs font-medium text-purple-600 dark:text-purple-300">v1.0 Now Live</span>
         </motion.div>
 
         <motion.h1
@@ -138,7 +138,7 @@ export default function LandingPage() {
             Start Creating Free
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <a href="#features" className="flex items-center gap-2 px-8 py-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors backdrop-blur-sm font-medium">
+          <a href="#features" className="flex items-center gap-2 px-8 py-4 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors backdrop-blur-sm font-medium">
             <Video className="w-4 h-4" />
             See How It Works
           </a>
@@ -180,7 +180,7 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: idx * 0.06 }}
-              className="glass-card p-6 text-left hover:-translate-y-1.5 transition-all duration-300 rounded-3xl overflow-hidden border border-white/10"
+              className="glass-card p-6 text-left hover:-translate-y-1.5 transition-all duration-300 rounded-3xl overflow-hidden border border-slate-200 dark:border-white/10"
             >
               <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
               <p className="text-muted-foreground text-sm">{feature.desc}</p>
@@ -339,7 +339,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/5 py-8 px-6 max-w-7xl mx-auto">
+      <footer className="relative z-10 border-t border-slate-200 dark:border-white/5 py-8 px-6 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">

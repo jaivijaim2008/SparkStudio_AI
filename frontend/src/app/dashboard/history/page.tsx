@@ -65,7 +65,7 @@ export default function HistoryPage() {
         <button 
           onClick={fetchProjects}
           disabled={loading}
-          className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors disabled:opacity-50"
+          className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
@@ -139,7 +139,7 @@ export default function HistoryPage() {
                   {project.platform}
                 </p>
 
-                <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-white/5">
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold capitalize ${
                     project.status === 'completed' || project.status === 'finished'
                       ? 'bg-green-500/10 text-green-400 border border-green-500/20'

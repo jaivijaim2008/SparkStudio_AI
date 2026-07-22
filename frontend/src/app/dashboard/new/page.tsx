@@ -81,7 +81,7 @@ export default function NewProject() {
             value={formData.topic}
             onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
             placeholder="e.g. AI replacing programmers and what computer science students should do about it..."
-            className="w-full min-h-[120px] p-4 rounded-xl bg-white/5 border border-white/10 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all outline-none resize-none placeholder:text-muted-foreground/50"
+            className="w-full min-h-[120px] p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all outline-none resize-none placeholder:text-muted-foreground/50"
             maxLength={500}
           />
           <div className="flex justify-end">
@@ -103,7 +103,7 @@ export default function NewProject() {
                   className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-200 ${
                     isSelected 
                       ? 'bg-purple-500/20 border-purple-500/50 text-white shadow-lg shadow-purple-500/10' 
-                      : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10 hover:text-white'
+                      : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-muted-foreground hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <platform.icon className={`w-6 h-6 mb-2 ${isSelected ? 'text-purple-400' : ''}`} />
@@ -122,7 +122,7 @@ export default function NewProject() {
               type="text"
               value={formData.audience}
               onChange={(e) => setFormData({ ...formData, audience: e.target.value })}
-              className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500/50 outline-none transition-all"
+              className="w-full p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-blue-500/50 outline-none transition-all"
               placeholder="e.g. Students, Beginners..."
             />
           </div>
@@ -132,19 +132,19 @@ export default function NewProject() {
             <select
               value={formData.tone}
               onChange={(e) => setFormData({ ...formData, tone: e.target.value })}
-              className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500/50 outline-none transition-all appearance-none"
+              className="w-full p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-blue-500/50 outline-none transition-all appearance-none"
             >
-              <option value="Informative" className="bg-black">Informative</option>
-              <option value="Funny" className="bg-black">Funny & Engaging</option>
-              <option value="Professional" className="bg-black">Professional</option>
-              <option value="Controversial" className="bg-black">Controversial / Clicky</option>
-              <option value="Inspirational" className="bg-black">Inspirational</option>
+              <option value="Informative" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Informative</option>
+              <option value="Funny" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Funny & Engaging</option>
+              <option value="Professional" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Professional</option>
+              <option value="Controversial" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Controversial / Clicky</option>
+              <option value="Inspirational" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Inspirational</option>
             </select>
           </div>
         </div>
 
         {/* Generate Button */}
-        <div className="pt-6 border-t border-white/10 flex justify-end">
+        <div className="pt-6 border-t border-slate-200 dark:border-white/10 flex justify-end">
           <button
             type="submit"
             disabled={isGenerating || !formData.topic}
