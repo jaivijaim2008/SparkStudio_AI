@@ -273,11 +273,11 @@ export default function SettingsPage() {
                     onClick={() => setBrowserNotifications(!browserNotifications)}
                     className="flex items-center justify-between w-full p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-left cursor-pointer"
                   >
-                    <div>
+                    <div className="pr-4">
                       <p className="text-sm font-semibold">Browser Notifications</p>
                       <p className="text-xs text-muted-foreground">Get alerted when a project finishes generation</p>
                     </div>
-                    <div className={`relative inline-block w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer ${
+                    <div className={`relative inline-block w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer shrink-0 ${
                       browserNotifications ? 'bg-purple-600' : 'bg-slate-300 dark:bg-white/20'
                     }`}>
                       <span className={`absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
@@ -291,11 +291,11 @@ export default function SettingsPage() {
                     onClick={() => setEmailUpdates(!emailUpdates)}
                     className="flex items-center justify-between w-full p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-left cursor-pointer"
                   >
-                    <div>
+                    <div className="pr-4">
                       <p className="text-sm font-semibold">Email Updates</p>
                       <p className="text-xs text-muted-foreground">Receive weekly analytics and feature updates</p>
                     </div>
-                    <div className={`relative inline-block w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer ${
+                    <div className={`relative inline-block w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer shrink-0 ${
                       emailUpdates ? 'bg-purple-600' : 'bg-slate-300 dark:bg-white/20'
                     }`}>
                       <span className={`absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
