@@ -1,4 +1,12 @@
+import nextPlugin from "@next/eslint-plugin-next";
+
 const eslintConfig = [
+  {
+    plugins: {
+      "@next/next": nextPlugin,
+    },
+    rules: {},
+  },
   {
     ignores: [
       ".next/**",
@@ -16,6 +24,7 @@ const eslintConfig = [
       "postcss.config.mjs",
       "tailwind.config.js"
     ],
-  },
+  }
 ];
+
 export default eslintConfig;
