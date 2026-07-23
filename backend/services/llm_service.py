@@ -76,6 +76,19 @@ class LLMService:
         async with self._semaphore:
             return await self._generate_with_retry(prompt, system_prompt)
 
+    async def generate_multimodal(
+        self,
+        prompt: str,
+        file_bytes: bytes,
+        mime_type: str,
+        system_prompt: Optional[str] = None,
+    ) -> str:
+        """
+        Generate a text completion with an accompanying file/image using Gemini multimodal inputs.
+        """
+        async with self._semaphore:
+            return await self._generate_gemini_multimodal(prompt, file_bytes, mime_type, system_prompt)
+
     async def _generate_with_retry(
         self,
         prompt: str,
@@ -237,6 +250,78 @@ class LLMService:
                 last_error = exc
 
         raise RuntimeError(f"All configured Gemini API keys failed. Last error: {last_error}")
+
+    async def _generate_gemini_multimodal(
+        self,
+        prompt: str,
+        file_bytes: bytes,
+        mime_type: str,
+        system_prompt: Optional[str] = None,
+    ) -> str:
+        """Call the Google Gemini API with multimodal input (text prompt + binary file)."""
+        keys = settings.gemini_keys
+        if not keys:
+            raise ValueError("No GEMINI_API_KEY configured. Add at least one key to .env")
+
+        import base64
+        file_b64 = base64.b64encode(file_bytes).decode("utf-8")
+
+        model_id = "gemini-flash-latest"
+
+        contents: list[dict] = []
+        if system_prompt:
+            contents.append({"role": "user", "parts": [{"text": f"[System Instructions]\n{system_prompt}"}]})
+            contents.append({"role": "model", "parts": [{"text": "Understood. I will follow those instructions."}]})
+        
+        contents.append({
+            "role": "user",
+            "parts": [
+                {
+                    "inlineData": {
+                        "mimeType": mime_type,
+                        "data": file_b64
+                    }
+                },
+                {
+                    "text": prompt
+                }
+            ]
+        })
+
+        payload = {
+            "contents": contents,
+            "generationConfig": {
+                "temperature": 0.7,
+                "maxOutputTokens": 4096,
+            },
+        }
+
+        last_error = None
+        for idx, api_key in enumerate(keys):
+            url = (
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}"
+                f":generateContent?key={api_key}"
+            )
+            logger.debug("Gemini multimodal request → model=%s (using key index %d)", model_id, idx)
+            try:
+                response = await self._client.post(url, json=payload, timeout=self.timeout)
+                response.raise_for_status()
+                data = response.json()
+                try:
+                    return data["candidates"][0]["content"]["parts"][0]["text"]
+                except (KeyError, IndexError) as exc:
+                    raise RuntimeError(f"Unexpected Gemini response structure: {json.dumps(data)[:300]}") from exc
+            except httpx.HTTPStatusError as exc:
+                logger.warning(
+                    "Gemini multimodal call with key index %d failed (%d). Error: %s",
+                    idx, exc.response.status_code, exc.response.text[:200]
+                )
+                last_error = exc
+            except Exception as exc:
+                logger.warning("Gemini multimodal call with key index %d failed: %s", idx, exc)
+                last_error = exc
+
+        raise RuntimeError(f"All configured Gemini API keys failed for multimodal call. Last error: {last_error}")
 
     # ── Groq ────────────────────────────────────────────────────────────
 
