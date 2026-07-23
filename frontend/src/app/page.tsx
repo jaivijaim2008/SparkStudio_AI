@@ -304,11 +304,7 @@ export default function LandingPage() {
               </ul>
               <Link
                 href="/dashboard/new"
-                className={`block w-full text-center py-3.5 rounded-full font-bold text-sm tracking-wide transition-all ${
-                  plan.featured
-                    ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 !text-white shadow-lg shadow-purple-500/30'
-                    : 'bg-slate-900 hover:bg-purple-600 !text-white border border-slate-800 shadow-md'
-                }`}
+                className={`block w-full text-center py-3.5 rounded-full font-bold text-sm tracking-wide transition-all hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 !text-white shadow-lg shadow-purple-500/30`}
               >
                 {plan.cta}
               </Link>
@@ -347,6 +343,9 @@ export default function LandingPage() {
             </div>
             <span className="font-outfit font-bold text-sm">SparkStudio AI</span>
           </div>
+          <p className="text-xs text-muted-foreground text-center">
+            © 2026 SparkStudio AI · Empowering creators with AI-powered content generation.
+          </p>
           <div className="flex items-center gap-4">
             <a href="#features" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#pricing" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
