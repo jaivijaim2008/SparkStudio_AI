@@ -21,6 +21,7 @@ export default function SettingsPage() {
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [stripeProLink, setStripeProLink] = useState('https://buy.stripe.com/your-mock-pro-link');
   const [stripeTeamLink, setStripeTeamLink] = useState('https://buy.stripe.com/your-mock-team-link');
+  const [upiId, setUpiId] = useState('');
 
   // Sync initial state from localStorage and Theme context on mount
   useEffect(() => {
@@ -54,6 +55,9 @@ export default function SettingsPage() {
 
     const savedStripeTeam = localStorage.getItem('sparkstudio-stripe-team');
     if (savedStripeTeam) setStripeTeamLink(savedStripeTeam);
+
+    const savedUpiId = localStorage.getItem('sparkstudio-upi-id');
+    if (savedUpiId) setUpiId(savedUpiId);
   }, [theme]);
 
   const handleSave = (e: React.FormEvent) => {
@@ -72,6 +76,7 @@ export default function SettingsPage() {
     localStorage.setItem('sparkstudio-email-updates', String(emailUpdates));
     localStorage.setItem('sparkstudio-stripe-pro', stripeProLink);
     localStorage.setItem('sparkstudio-stripe-team', stripeTeamLink);
+    localStorage.setItem('sparkstudio-upi-id', upiId);
 
     toast.success('Configuration saved successfully!');
   };
@@ -344,6 +349,18 @@ export default function SettingsPage() {
                       value={stripeTeamLink}
                       onChange={(e) => setStripeTeamLink(e.target.value)}
                       placeholder="e.g. https://buy.stripe.com/your-team-link"
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:border-purple-500 focus:outline-none transition-colors font-medium"
+                    />
+                  </div>
+
+                  <div className="border-t border-slate-200 dark:border-white/5 pt-4 mt-4 space-y-2">
+                    <label className="text-sm font-semibold text-purple-600 dark:text-purple-400">UPI ID / VPA (For India Payments)</label>
+                    <p className="text-xs text-muted-foreground">Setting this enables a beautiful UPI QR code scanner & direct UPI app launch checkout for Indian users.</p>
+                    <input 
+                      type="text"
+                      value={upiId}
+                      onChange={(e) => setUpiId(e.target.value)}
+                      placeholder="e.g. yourname@upi or paytm"
                       className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:border-purple-500 focus:outline-none transition-colors font-medium"
                     />
                   </div>
