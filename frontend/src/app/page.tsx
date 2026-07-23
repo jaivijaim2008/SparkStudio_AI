@@ -340,13 +340,18 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-slate-200 dark:border-white/5 py-8 px-6 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 relative">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
               <Sparkles className="w-3 h-3 text-white" />
             </div>
             <span className="font-outfit font-bold text-sm">SparkStudio AI</span>
           </div>
+          
+          <div className="text-xs text-muted-foreground font-medium text-center md:absolute md:left-1/2 md:-translate-x-1/2">
+            © {new Date().getFullYear()} SparkStudio AI. Empowering creators with agentic AI.
+          </div>
+
           <div className="flex items-center gap-4">
             <a href="#features" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#pricing" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
