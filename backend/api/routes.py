@@ -7,10 +7,11 @@ import logging
 from typing import Optional
 from supabase import create_client, Client
 
-from backend.models.schemas import ProjectInput
+from backend.models.schemas import ProjectInput, CertificateExtractRequest, CertificateExtractResponse
 from backend.services.orchestrator import PipelineOrchestrator
 from backend.services.llm_service import LLMService
 from backend.services.export_service import ExportService
+from backend.services.certificate_service import CertificateService
 from backend.config import settings
 
 logger = logging.getLogger("creatorpilot.api")
@@ -310,4 +311,33 @@ async def delete_project(project_id: str):
     if deleted:
         return {"status": "ok", "message": "Project deleted successfully"}
     raise HTTPException(status_code=404, detail="Project not found")
+
+
+@router.post("/extract-certificate", response_model=CertificateExtractResponse)
+async def extract_certificate(payload: CertificateExtractRequest):
+    """
+    Extract certificate details (title, issuer, date, skills) and generate a LinkedIn post.
+    """
+    try:
+        extracted = CertificateService.extract_certificate_info(
+            filename=payload.filename,
+            raw_text=payload.extracted_text or "",
+            user_notes=payload.user_notes or ""
+        )
+        linkedin_post = CertificateService.generate_linkedin_post(
+            extracted_info=extracted,
+            custom_tone=payload.tone or "Professional"
+        )
+        return CertificateExtractResponse(
+            certificate_title=extracted["certificate_title"],
+            issuing_organization=extracted["issuing_organization"],
+            completion_date=extracted["completion_date"],
+            skills=extracted["skills"],
+            achievements=extracted["achievements"],
+            linkedin_post=linkedin_post
+        )
+    except Exception as e:
+        logger.error(f"Error extracting certificate info: {e}")
+        raise HTTPException(status_code=500, detail=f"Certificate processing failed: {str(e)}")
+
 
