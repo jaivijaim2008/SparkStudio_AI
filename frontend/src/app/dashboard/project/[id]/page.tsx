@@ -183,7 +183,7 @@ export default function ProjectResultPage() {
         {status === 'completed' && (
           <button 
             onClick={handleDownload}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 transition-colors"
           >
             <Download className="w-4 h-4" />
             Download Package (.zip)
@@ -236,14 +236,14 @@ export default function ProjectResultPage() {
                 return (
                   <div className="mb-8">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-white/70">
+                      <span className="text-sm font-medium text-slate-600 dark:text-white/70">
                         {status === 'completed'
                           ? `✅ Pipeline Complete in ${formatTime(elapsedSeconds)}`
                           : `⚡ Generating... ${completed} of ${total} agents done`}
                       </span>
                       <div className="flex items-center gap-3">
                         {status === 'generating' && (
-                          <span className="flex items-center gap-1.5 text-xs text-white/40">
+                          <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-white/40">
                             <Clock className="w-3 h-3" />
                             {formatTime(elapsedSeconds)}
                           </span>
@@ -251,7 +251,7 @@ export default function ProjectResultPage() {
                         <span className="text-sm font-bold text-purple-400">{pct}%</span>
                       </div>
                     </div>
-                    <div className="w-full h-3 rounded-full bg-white/5 border border-white/10 overflow-hidden">
+                    <div className="w-full h-3 rounded-full bg-slate-200 dark:bg-white/5 border border-slate-300 dark:border-white/10 overflow-hidden">
                       <motion.div
                         className="h-full rounded-full bg-gradient-to-r from-purple-600 via-blue-500 to-cyan-400"
                         initial={{ width: 0 }}
@@ -279,7 +279,7 @@ export default function ProjectResultPage() {
                     key={agent.key} 
                     className={`flex items-center gap-4 relative p-3 rounded-2xl transition-all duration-300 ${
                       agent.status === 'running' ? 'bg-blue-500/5 border border-blue-500/10 shadow-[0_4px_20px_rgba(59,130,246,0.03)]' :
-                      agent.status === 'completed' ? 'bg-white/[0.01] border border-transparent' : 'opacity-50 border border-transparent'
+                      agent.status === 'completed' ? 'bg-slate-50 dark:bg-white/[0.01] border border-slate-200 dark:border-transparent' : 'opacity-50 border border-transparent'
                     }`}
                     animate={{
                       scale: agent.status === 'running' ? 1.02 : 1,
@@ -289,7 +289,7 @@ export default function ProjectResultPage() {
                   >
                     {/* Animated Connection Line */}
                     {i !== agents.length - 1 && (
-                      <div className="absolute top-12 left-8 w-[2px] h-[calc(100%-12px)] bg-white/5 -translate-x-[1px] overflow-hidden">
+                      <div className="absolute top-12 left-8 w-[2px] h-[calc(100%-12px)] bg-slate-200 dark:bg-white/5 -translate-x-[1px] overflow-hidden">
                         <motion.div
                           className="w-full h-full bg-gradient-to-b from-purple-500 via-blue-500 to-transparent"
                           initial={{ height: "0%" }}
@@ -314,7 +314,7 @@ export default function ProjectResultPage() {
                         agent.status === 'completed' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' :
                         agent.status === 'running' ? 'bg-blue-500/20 text-blue-400 border border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]' :
                         agent.status === 'error' ? 'bg-red-500/20 text-red-400 border border-red-500/50' :
-                        'bg-white/5 text-gray-500 border border-white/10'
+                        'bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-gray-500 border border-slate-300 dark:border-white/10'
                       }`}>
                         {agent.status === 'completed' ? (
                           <motion.div 
@@ -339,7 +339,7 @@ export default function ProjectResultPage() {
                       <div className="flex items-center justify-between">
                         <span className={`font-medium transition-colors ${
                           agent.status === 'running' ? 'text-blue-400 font-semibold' :
-                          agent.status === 'completed' ? 'text-white' : 'text-gray-500'
+                          agent.status === 'completed' ? 'text-slate-800 dark:text-white' : 'text-slate-400 dark:text-gray-500'
                         }`}>
                           {agent.name} Agent
                         </span>
@@ -393,12 +393,12 @@ export default function ProjectResultPage() {
                   <h3 className="text-lg font-bold font-outfit mb-4">Script Sections</h3>
                   <div className="space-y-4">
                     {getScriptSections().map((section: any, idx: number) => (
-                      <div key={idx} className="p-4 bg-white/5 rounded-lg border border-white/10">
+                      <div key={idx} className="p-4 bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/10">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-bold text-purple-400">{section.label || `Section ${idx + 1}`}</span>
+                          <span className="text-sm font-bold text-purple-500 dark:text-purple-400">{section.label || `Section ${idx + 1}`}</span>
                           <span className="text-xs text-muted-foreground">{section.time_range || ''}</span>
                         </div>
-                        <p className="text-sm text-white/80">{section.content || ''}</p>
+                        <p className="text-sm text-slate-700 dark:text-white/80">{section.content || ''}</p>
                       </div>
                     ))}
                   </div>
@@ -411,21 +411,21 @@ export default function ProjectResultPage() {
                   <h3 className="text-lg font-bold font-outfit mb-4">Research Insights</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {getResearch().hooks && getResearch().hooks.length > 0 && (
-                      <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-                        <h4 className="text-sm font-bold text-cyan-400 mb-2">🎣 Hooks</h4>
+                      <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/10">
+                        <h4 className="text-sm font-bold text-cyan-600 dark:text-cyan-400 mb-2">🎣 Hooks</h4>
                         <ul className="space-y-1">
                           {getResearch().hooks.map((h: string, i: number) => (
-                            <li key={i} className="text-sm text-white/70">• {h}</li>
+                            <li key={i} className="text-sm text-slate-600 dark:text-white/70">• {h}</li>
                           ))}
                         </ul>
                       </div>
                     )}
                     {getResearch().viral_angles && getResearch().viral_angles.length > 0 && (
-                      <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-                        <h4 className="text-sm font-bold text-pink-400 mb-2">🔥 Viral Angles</h4>
+                      <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/10">
+                        <h4 className="text-sm font-bold text-pink-600 dark:text-pink-400 mb-2">🔥 Viral Angles</h4>
                         <ul className="space-y-1">
                           {getResearch().viral_angles.map((a: string, i: number) => (
-                            <li key={i} className="text-sm text-white/70">• {a}</li>
+                            <li key={i} className="text-sm text-slate-600 dark:text-white/70">• {a}</li>
                           ))}
                         </ul>
                       </div>
@@ -473,9 +473,9 @@ export default function ProjectResultPage() {
                       <h4 className="font-bold">Visual Description</h4>
                       <p className="text-muted-foreground text-sm">{scene.visual_description || 'No description available'}</p>
                       <div className="flex gap-4 mt-4 text-xs font-medium flex-wrap">
-                        <span className="px-2 py-1 bg-white/5 rounded-md">⏳ {scene.duration || 'N/A'}</span>
-                        <span className="px-2 py-1 bg-white/5 rounded-md text-purple-300">🎥 {scene.camera_angle || 'Auto'}</span>
-                        {scene.emotion && <span className="px-2 py-1 bg-white/5 rounded-md text-pink-300">💡 {scene.emotion}</span>}
+                        <span className="px-2 py-1 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-md">⏳ {scene.duration || 'N/A'}</span>
+                        <span className="px-2 py-1 bg-slate-100 dark:bg-white/5 rounded-md text-purple-600 dark:text-purple-300">🎥 {scene.camera_angle || 'Auto'}</span>
+                        {scene.emotion && <span className="px-2 py-1 bg-slate-100 dark:bg-white/5 rounded-md text-pink-600 dark:text-pink-300">💡 {scene.emotion}</span>}
                       </div>
                     </div>
                   </div>
@@ -500,14 +500,14 @@ export default function ProjectResultPage() {
                 <h4 className="text-sm font-medium text-muted-foreground mb-1">Optimized Title</h4>
                 <p className="text-xl font-bold">{getSeoTitle()}</p>
               </div>
-              <div className="h-px w-full bg-white/10" />
+              <div className="h-px w-full bg-slate-200 dark:bg-white/10" />
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-1">Description</h4>
-                <p className="text-white/90">{getSeoDescription() || 'Generating...'}</p>
+                <p className="text-slate-700 dark:text-white/90">{getSeoDescription() || 'Generating...'}</p>
               </div>
               {getSeoTags().length > 0 && (
                 <>
-                  <div className="h-px w-full bg-white/10" />
+                  <div className="h-px w-full bg-slate-200 dark:bg-white/10" />
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-2">Tags</h4>
                     <div className="flex flex-wrap gap-2">
@@ -520,7 +520,7 @@ export default function ProjectResultPage() {
               )}
               {getSeoHashtags().length > 0 && (
                 <>
-                  <div className="h-px w-full bg-white/10" />
+                  <div className="h-px w-full bg-slate-200 dark:bg-white/10" />
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-2">Hashtags</h4>
                     <div className="flex flex-wrap gap-2">
@@ -547,20 +547,20 @@ export default function ProjectResultPage() {
                 <>
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-1">Narration Script</h4>
-                    <p className="whitespace-pre-wrap text-white/90 leading-relaxed">{getVoice().narration_script}</p>
+                    <p className="whitespace-pre-wrap text-slate-700 dark:text-white/90 leading-relaxed">{getVoice().narration_script}</p>
                   </div>
-                  <div className="h-px w-full bg-white/10" />
+                  <div className="h-px w-full bg-slate-200 dark:bg-white/10" />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-white/5 rounded-lg">
-                      <h4 className="text-sm font-bold text-cyan-400 mb-1">Speaking Speed</h4>
-                      <p className="text-white/80 text-sm capitalize">{getVoice().speaking_speed || 'Medium'}</p>
+                    <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-lg">
+                      <h4 className="text-sm font-bold text-cyan-600 dark:text-cyan-400 mb-1">Speaking Speed</h4>
+                      <p className="text-slate-600 dark:text-white/80 text-sm capitalize">{getVoice().speaking_speed || 'Medium'}</p>
                     </div>
                     {getVoice().pauses && getVoice().pauses.length > 0 && (
-                      <div className="p-4 bg-white/5 rounded-lg">
-                        <h4 className="text-sm font-bold text-pink-400 mb-1">Pauses</h4>
+                      <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-lg">
+                        <h4 className="text-sm font-bold text-pink-600 dark:text-pink-400 mb-1">Pauses</h4>
                         <ul className="space-y-1">
                           {getVoice().pauses.map((p: string, i: number) => (
-                            <li key={i} className="text-sm text-white/70">• {p}</li>
+                            <li key={i} className="text-sm text-slate-600 dark:text-white/70">• {p}</li>
                           ))}
                         </ul>
                       </div>
@@ -595,13 +595,13 @@ export default function ProjectResultPage() {
                   </div>
                   {(getQuality().metrics || []).length > 0 && (
                     <>
-                      <div className="h-px w-full bg-white/10" />
+                      <div className="h-px w-full bg-slate-200 dark:bg-white/10" />
                       <div className="space-y-3">
                         {getQuality().metrics.map((metric: any, i: number) => (
-                          <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                            <span className="font-medium text-sm">{metric.name || `Metric ${i+1}`}</span>
+                          <div key={i} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 rounded-lg">
+                            <span className="font-medium text-sm text-slate-700 dark:text-slate-200">{metric.name || `Metric ${i+1}`}</span>
                             <div className="flex items-center gap-3">
-                              <div className="w-32 h-2 rounded-full bg-black/50 overflow-hidden">
+                              <div className="w-32 h-2 rounded-full bg-slate-200 dark:bg-black/50 overflow-hidden">
                                 <div className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full" style={{width: `${metric.score || 0}%`}} />
                               </div>
                               <span className="text-sm font-bold w-8 text-right">{metric.score || 0}</span>
@@ -613,12 +613,12 @@ export default function ProjectResultPage() {
                   )}
                   {(getQuality().suggestions || []).length > 0 && (
                     <>
-                      <div className="h-px w-full bg-white/10" />
+                      <div className="h-px w-full bg-slate-200 dark:bg-white/10" />
                       <div>
-                        <h4 className="text-sm font-bold text-yellow-400 mb-2">💡 Suggestions</h4>
+                        <h4 className="text-sm font-bold text-yellow-600 dark:text-yellow-400 mb-2">💡 Suggestions</h4>
                         <ul className="space-y-1">
                           {getQuality().suggestions.map((s: string, i: number) => (
-                            <li key={i} className="text-sm text-white/70">• {s}</li>
+                            <li key={i} className="text-sm text-slate-600 dark:text-white/70">• {s}</li>
                           ))}
                         </ul>
                       </div>
