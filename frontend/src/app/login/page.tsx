@@ -39,9 +39,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-600/10 dark:bg-purple-600/20 rounded-full blur-[120px] pointer-events-none" />
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -55,7 +55,7 @@ export default function LoginPage() {
           
           <div>
             <h1 className="text-3xl font-bold font-outfit mb-2">Welcome Back</h1>
-            <p className="text-gray-400">Sign in to save your AI generations and sync your preferences across devices.</p>
+            <p className="text-slate-500 dark:text-gray-400">Sign in to save your AI generations and sync your preferences across devices.</p>
           </div>
 
           {!isConfigured && (
@@ -91,19 +91,19 @@ export default function LoginPage() {
           </button>
           
           <div className="w-full flex items-center gap-3">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-xs text-gray-500">or</span>
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-px bg-slate-200 dark:bg-white/10" />
+            <span className="text-xs text-slate-400 dark:text-gray-500">or</span>
+            <div className="flex-1 h-px bg-slate-200 dark:bg-white/10" />
           </div>
 
           <button
             onClick={handleSkipLogin}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-all"
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-medium hover:bg-white/10 transition-all"
           >
             Continue without signing in
           </button>
           
-          <p className="text-xs text-gray-500 mt-4">
+          <p className="text-xs text-slate-400 dark:text-gray-500 mt-4">
             By signing in, you agree to our Terms of Service and Privacy Policy.
           </p>
         </div>

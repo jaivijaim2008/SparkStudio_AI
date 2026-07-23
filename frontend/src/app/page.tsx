@@ -45,7 +45,7 @@ export default function LandingPage() {
       <div className="absolute -bottom-8 left-20 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 dark:opacity-30 animate-blob" style={{ animationDelay: '4s' }}></div>
 
       {/* Navbar */}
-      <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto border-b border-white/5">
+      <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto border-b border-slate-200 dark:border-white/5">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-white" />
@@ -58,11 +58,11 @@ export default function LandingPage() {
           
           {sessionUser ? (
             <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+              <Link href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1 bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10">
                 <Bot className="w-4 h-4 text-purple-400" />
                 Dashboard
               </Link>
-              <div className="flex items-center gap-2 border-l border-white/10 pl-4">
+              <div className="flex items-center gap-2 border-l border-slate-200 dark:border-white/10 pl-4">
                 {sessionUser.user_metadata?.avatar_url ? (
                   <img 
                     src={sessionUser.user_metadata.avatar_url} 
@@ -74,10 +74,10 @@ export default function LandingPage() {
                     <User className="w-3.5 h-3.5 text-purple-300" />
                   </div>
                 )}
-                <span className="text-xs text-white/70 max-w-[120px] truncate hidden sm:inline">{sessionUser.email}</span>
+                <span className="text-xs text-slate-600 dark:text-white/70 max-w-[120px] truncate hidden sm:inline">{sessionUser.email}</span>
                 <button 
                   onClick={handleSignOut}
-                  className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-colors ml-1"
+                  className="p-1.5 rounded-lg text-slate-400 dark:text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-colors ml-1"
                   title="Sign Out"
                 >
                   <LogOut className="w-4 h-4" />
@@ -101,10 +101,10 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm mb-8"
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-sm mb-8"
         >
           <span className="flex h-2 w-2 rounded-full bg-purple-500 animate-pulse"></span>
-          <span className="text-xs font-medium text-purple-300">v1.0 Now Live</span>
+          <span className="text-xs font-medium text-purple-600 dark:text-purple-300">v1.0 Now Live</span>
         </motion.div>
 
         <motion.h1
@@ -138,7 +138,7 @@ export default function LandingPage() {
             Start Creating Free
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <a href="#features" className="flex items-center gap-2 px-8 py-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors backdrop-blur-sm font-medium">
+          <a href="#features" className="flex items-center gap-2 px-8 py-4 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors backdrop-blur-sm font-medium">
             <Video className="w-4 h-4" />
             See How It Works
           </a>
@@ -180,7 +180,7 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: idx * 0.06 }}
-              className="glass-card p-6 text-left hover:-translate-y-1 transition-transform duration-300"
+              className="glass-card p-6 text-left hover:-translate-y-1.5 transition-all duration-300 rounded-3xl overflow-hidden border border-slate-200 dark:border-white/10"
             >
               <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
               <p className="text-muted-foreground text-sm">{feature.desc}</p>
@@ -275,33 +275,39 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: idx * 0.1 }}
-              className={`glass-card p-8 text-left relative ${plan.featured ? 'border-purple-500/50 shadow-xl shadow-purple-500/10' : ''}`}
+              className={`glass-card p-8 md:p-10 text-left relative overflow-hidden rounded-[28px] md:rounded-[32px] transition-all duration-300 hover:-translate-y-2 border backdrop-blur-2xl ${
+                plan.featured
+                  ? 'border-purple-500/60 bg-gradient-to-b from-purple-500/10 via-purple-500/5 to-purple-500/10 dark:from-purple-500/20 dark:via-purple-500/5 dark:to-black/40 shadow-2xl shadow-purple-500/20'
+                  : 'border-slate-200 dark:border-white/10 hover:border-purple-500/40 bg-white/90 dark:bg-black/40 shadow-xl'
+              }`}
             >
               {plan.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-xs font-bold">
+                <div className="absolute top-0 right-6 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-b-xl text-xs font-bold text-white shadow-lg shadow-purple-500/30 tracking-wide uppercase">
                   Most Popular
                 </div>
               )}
-              <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
+              <h3 className="text-2xl font-bold font-outfit mb-1">{plan.name}</h3>
               <p className="text-muted-foreground text-sm mb-6">{plan.desc}</p>
               <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-4xl font-outfit font-bold">{plan.price}</span>
-                <span className="text-muted-foreground text-sm">{plan.period}</span>
+                <span className="text-4xl md:text-5xl font-outfit font-bold tracking-tight">{plan.price}</span>
+                <span className="text-muted-foreground text-sm font-medium">{plan.period}</span>
               </div>
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-3.5 mb-8">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                    {f}
+                  <li key={f} className="flex items-center gap-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    <div className="w-5 h-5 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <span>{f}</span>
                   </li>
                 ))}
               </ul>
               <Link
                 href="/dashboard/new"
-                className={`block w-full text-center py-3 rounded-xl font-medium transition-all ${
+                className={`block w-full text-center py-3.5 rounded-full font-bold text-sm tracking-wide transition-all ${
                   plan.featured
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:opacity-90 shadow-lg shadow-purple-500/20'
-                    : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                    ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 !text-white shadow-lg shadow-purple-500/30'
+                    : 'bg-slate-900 hover:bg-purple-600 !text-white border border-slate-800 shadow-md'
                 }`}
               >
                 {plan.cta}
@@ -333,7 +339,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/5 py-8 px-6 max-w-7xl mx-auto">
+      <footer className="relative z-10 border-t border-slate-200 dark:border-white/5 py-8 px-6 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">

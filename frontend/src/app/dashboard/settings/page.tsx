@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sliders, Bell, Palette, Download, HelpCircle, Save, Sun, Moon, Monitor, Check } from 'lucide-react';
+import { Sliders, Bell, Palette, Download, HelpCircle, Save, Sun, Moon, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/providers/theme-provider';
 
@@ -10,8 +10,59 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
   const { theme, setTheme } = useTheme();
 
+  // Local state for all settings fields
+  const [tempTheme, setTempTheme] = useState<'dark' | 'light'>('dark');
+  const [language, setLanguage] = useState('en');
+  const [tone, setTone] = useState('educational');
+  const [includeSubtitles, setIncludeSubtitles] = useState(true);
+  const [includeStoryboard, setIncludeStoryboard] = useState(true);
+  const [autoDownload, setAutoDownload] = useState(false);
+  const [browserNotifications, setBrowserNotifications] = useState(true);
+  const [emailUpdates, setEmailUpdates] = useState(false);
+
+  // Sync initial state from localStorage and Theme context on mount
+  useEffect(() => {
+    if (theme) {
+      setTempTheme(theme);
+    }
+    
+    const savedLang = localStorage.getItem('sparkstudio-lang');
+    if (savedLang) setLanguage(savedLang);
+    
+    const savedTone = localStorage.getItem('sparkstudio-tone');
+    if (savedTone) setTone(savedTone);
+
+    const savedSubtitles = localStorage.getItem('sparkstudio-subtitles');
+    if (savedSubtitles) setIncludeSubtitles(savedSubtitles === 'true');
+
+    const savedStoryboard = localStorage.getItem('sparkstudio-storyboard');
+    if (savedStoryboard) setIncludeStoryboard(savedStoryboard === 'true');
+
+    const savedAutoDownload = localStorage.getItem('sparkstudio-autodownload');
+    if (savedAutoDownload) setAutoDownload(savedAutoDownload === 'true');
+
+    const savedBrowserNotifications = localStorage.getItem('sparkstudio-browser-notifications');
+    if (savedBrowserNotifications) setBrowserNotifications(savedBrowserNotifications === 'true');
+
+    const savedEmailUpdates = localStorage.getItem('sparkstudio-email-updates');
+    if (savedEmailUpdates) setEmailUpdates(savedEmailUpdates === 'true');
+  }, [theme]);
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Save to global theme provider
+    setTheme(tempTheme);
+    
+    // Save all other settings to localStorage
+    localStorage.setItem('sparkstudio-lang', language);
+    localStorage.setItem('sparkstudio-tone', tone);
+    localStorage.setItem('sparkstudio-subtitles', String(includeSubtitles));
+    localStorage.setItem('sparkstudio-storyboard', String(includeStoryboard));
+    localStorage.setItem('sparkstudio-autodownload', String(autoDownload));
+    localStorage.setItem('sparkstudio-browser-notifications', String(browserNotifications));
+    localStorage.setItem('sparkstudio-email-updates', String(emailUpdates));
+
     toast.success('Configuration saved successfully!');
   };
 
@@ -61,7 +112,11 @@ export default function SettingsPage() {
                 <div className="space-y-4 max-w-md">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Default Output Language</label>
-                    <select className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white focus:border-purple-500 focus:outline-none transition-colors">
+                    <select 
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:border-purple-500 focus:outline-none transition-colors"
+                    >
                       <option value="en">English (US)</option>
                       <option value="en-uk">English (UK)</option>
                       <option value="es">Spanish</option>
@@ -71,7 +126,11 @@ export default function SettingsPage() {
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Default Content Tone</label>
-                    <select className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white focus:border-purple-500 focus:outline-none transition-colors">
+                    <select 
+                      value={tone}
+                      onChange={(e) => setTone(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:border-purple-500 focus:outline-none transition-colors"
+                    >
                       <option value="educational">Educational & Professional</option>
                       <option value="viral">Viral & High Energy</option>
                       <option value="storytelling">Cinematic Storytelling</option>
@@ -86,109 +145,73 @@ export default function SettingsPage() {
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                 <div>
                   <h3 className="text-lg font-bold font-outfit">Appearance & Theme</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Choose how SparkStudio AI looks to you</p>
+                  <p className="text-xs text-muted-foreground mt-1">Select your preferred SparkStudio interface theme</p>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-xl">
                   {/* Midnight Dark */}
                   <button 
                     type="button" 
                     onClick={() => {
-                      setTheme('dark');
-                      toast.success('Theme changed to Midnight Dark');
+                      setTempTheme('dark');
                     }}
-                    className={`p-4 rounded-xl text-left space-y-3 relative overflow-hidden border-2 transition-all ${
-                      theme === 'dark'
-                        ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10'
-                        : 'border-white/10 hover:border-white/20 bg-white/5'
+                    className={`p-5 rounded-2xl text-left space-y-4 relative overflow-hidden border-2 transition-all ${
+                      tempTheme === 'dark'
+                        ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20'
+                        : 'border-slate-300 dark:border-white/10 hover:border-purple-400 bg-slate-200/50 dark:bg-white/5'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="w-8 h-8 rounded-lg bg-gray-900 border border-white/10 flex items-center justify-center text-purple-400">
-                        <Moon className="w-4 h-4" />
+                      <div className="w-9 h-9 rounded-xl bg-gray-900 border border-white/10 flex items-center justify-center text-purple-400">
+                        <Moon className="w-5 h-5" />
                       </div>
-                      {theme === 'dark' && (
-                        <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center text-white">
-                          <Check className="w-3 h-3" />
+                      {tempTheme === 'dark' && (
+                        <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center text-white shadow-md">
+                          <Check className="w-3.5 h-3.5" />
                         </div>
                       )}
                     </div>
-                    <div className="w-full h-12 bg-gradient-to-r from-gray-950 via-slate-900 to-zinc-900 rounded-lg border border-white/10 p-2 flex items-center gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-purple-500" />
-                      <div className="w-12 h-2 rounded bg-white/20" />
-                      <div className="w-6 h-2 rounded bg-white/10" />
+                    <div className="w-full h-14 bg-gradient-to-r from-gray-950 via-slate-900 to-zinc-900 rounded-xl border border-white/10 p-3 flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-purple-500" />
+                      <div className="w-16 h-2.5 rounded bg-white/30" />
+                      <div className="w-8 h-2.5 rounded bg-white/15" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold block">Midnight Dark</span>
+                      <span className="text-base font-bold block">Midnight Dark</span>
                       <span className="text-xs text-muted-foreground">Deep dark theme with glassmorphism</span>
                     </div>
                   </button>
 
-                  {/* Clean Light */}
+                  {/* Soft Light */}
                   <button 
                     type="button" 
                     onClick={() => {
-                      setTheme('light');
-                      toast.success('Theme changed to Clean Light');
+                      setTempTheme('light');
                     }}
-                    className={`p-4 rounded-xl text-left space-y-3 relative overflow-hidden border-2 transition-all ${
-                      theme === 'light'
-                        ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10'
-                        : 'border-white/10 hover:border-white/20 bg-white/5'
+                    className={`p-5 rounded-2xl text-left space-y-4 relative overflow-hidden border-2 transition-all ${
+                      tempTheme === 'light'
+                        ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20'
+                        : 'border-slate-300 dark:border-white/10 hover:border-purple-400 bg-slate-200/50 dark:bg-white/5'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-300/40 flex items-center justify-center text-amber-600">
-                        <Sun className="w-4 h-4" />
+                      <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300/40 flex items-center justify-center text-amber-600">
+                        <Sun className="w-5 h-5" />
                       </div>
-                      {theme === 'light' && (
-                        <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center text-white">
-                          <Check className="w-3 h-3" />
+                      {tempTheme === 'light' && (
+                        <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center text-white shadow-md">
+                          <Check className="w-3.5 h-3.5" />
                         </div>
                       )}
                     </div>
-                    <div className="w-full h-12 bg-gradient-to-r from-gray-100 via-white to-gray-50 rounded-lg border border-gray-300 p-2 flex items-center gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-purple-600" />
-                      <div className="w-12 h-2 rounded bg-gray-800" />
-                      <div className="w-6 h-2 rounded bg-gray-400" />
+                    <div className="w-full h-14 bg-gradient-to-r from-slate-200 via-slate-100 to-white rounded-xl border border-slate-300 p-3 flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-purple-600" />
+                      <div className="w-16 h-2.5 rounded bg-slate-700" />
+                      <div className="w-8 h-2.5 rounded bg-slate-400" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold block">Clean Light</span>
-                      <span className="text-xs text-muted-foreground">Bright, clean aesthetic with high contrast</span>
-                    </div>
-                  </button>
-
-                  {/* System Preference */}
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      setTheme('system');
-                      toast.success('Theme set to System Default');
-                    }}
-                    className={`p-4 rounded-xl text-left space-y-3 relative overflow-hidden border-2 transition-all ${
-                      theme === 'system'
-                        ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/10'
-                        : 'border-white/10 hover:border-white/20 bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400">
-                        <Monitor className="w-4 h-4" />
-                      </div>
-                      {theme === 'system' && (
-                        <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center text-white">
-                          <Check className="w-3 h-3" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="w-full h-12 bg-gradient-to-r from-gray-900 via-gray-500 to-gray-100 rounded-lg border border-white/10 p-2 flex items-center gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-blue-500" />
-                      <div className="w-12 h-2 rounded bg-white/40" />
-                      <div className="w-6 h-2 rounded bg-white/20" />
-                    </div>
-                    <div>
-                      <span className="text-sm font-semibold block">System Sync</span>
-                      <span className="text-xs text-muted-foreground">Matches your operating system mode</span>
+                      <span className="text-base font-bold block">Soft Light</span>
+                      <span className="text-xs text-muted-foreground">Eye-friendly soft slate theme with crisp text contrast</span>
                     </div>
                   </button>
                 </div>
@@ -200,22 +223,37 @@ export default function SettingsPage() {
                 <h3 className="text-lg font-bold font-outfit">Export Preferences</h3>
                 
                 <div className="space-y-3">
-                  <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/10">
-                    <input type="checkbox" defaultChecked className="rounded border-white/20 bg-black/50 text-purple-600 focus:ring-purple-500 focus:ring-offset-black" />
+                  <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-white/10">
+                    <input 
+                      type="checkbox" 
+                      checked={includeSubtitles}
+                      onChange={(e) => setIncludeSubtitles(e.target.checked)}
+                      className="rounded border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-black/50 text-purple-600 focus:ring-purple-500 focus:ring-offset-white dark:focus:ring-offset-black" 
+                    />
                     <div>
                       <p className="text-sm font-semibold">Include Subtitles (SRT/VTT)</p>
                       <p className="text-xs text-muted-foreground">Always include subtitle files in the ZIP export</p>
                     </div>
                   </label>
-                  <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/10">
-                    <input type="checkbox" defaultChecked className="rounded border-white/20 bg-black/50 text-purple-600 focus:ring-purple-500 focus:ring-offset-black" />
+                  <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-white/10">
+                    <input 
+                      type="checkbox" 
+                      checked={includeStoryboard}
+                      onChange={(e) => setIncludeStoryboard(e.target.checked)}
+                      className="rounded border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-black/50 text-purple-600 focus:ring-purple-500 focus:ring-offset-white dark:focus:ring-offset-black" 
+                    />
                     <div>
                       <p className="text-sm font-semibold">Include Storyboard Data</p>
                       <p className="text-xs text-muted-foreground">Export visual directions and image prompts</p>
                     </div>
                   </label>
-                  <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/10">
-                    <input type="checkbox" className="rounded border-white/20 bg-black/50 text-purple-600 focus:ring-purple-500 focus:ring-offset-black" />
+                  <label className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-white/10">
+                    <input 
+                      type="checkbox" 
+                      checked={autoDownload}
+                      onChange={(e) => setAutoDownload(e.target.checked)}
+                      className="rounded border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-black/50 text-purple-600 focus:ring-purple-500 focus:ring-offset-white dark:focus:ring-offset-black" 
+                    />
                     <div>
                       <p className="text-sm font-semibold">Auto-download on complete</p>
                       <p className="text-xs text-muted-foreground">Automatically save ZIP when pipeline finishes</p>
@@ -230,24 +268,41 @@ export default function SettingsPage() {
                 <h3 className="text-lg font-bold font-outfit">Notification Settings</h3>
                 
                 <div className="space-y-3">
-                  <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
-                    <div>
+                  <button
+                    type="button"
+                    onClick={() => setBrowserNotifications(!browserNotifications)}
+                    className="flex items-center justify-between w-full p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-left cursor-pointer"
+                  >
+                    <div className="pr-4">
                       <p className="text-sm font-semibold">Browser Notifications</p>
                       <p className="text-xs text-muted-foreground">Get alerted when a project finishes generation</p>
                     </div>
-                    <div className="relative inline-block w-10 h-6 rounded-full bg-purple-600 cursor-pointer">
-                      <span className="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform translate-x-4"></span>
+                    <div className={`relative inline-block w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer shrink-0 ${
+                      browserNotifications ? 'bg-purple-600' : 'bg-slate-300 dark:bg-white/20'
+                    }`}>
+                      <span className={`absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
+                        browserNotifications ? 'translate-x-4' : 'translate-x-0'
+                      }`}></span>
                     </div>
-                  </label>
-                  <label className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
-                    <div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEmailUpdates(!emailUpdates)}
+                    className="flex items-center justify-between w-full p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-left cursor-pointer"
+                  >
+                    <div className="pr-4">
                       <p className="text-sm font-semibold">Email Updates</p>
                       <p className="text-xs text-muted-foreground">Receive weekly analytics and feature updates</p>
                     </div>
-                    <div className="relative inline-block w-10 h-6 rounded-full bg-white/20 cursor-pointer">
-                      <span className="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform"></span>
+                    <div className={`relative inline-block w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer shrink-0 ${
+                      emailUpdates ? 'bg-purple-600' : 'bg-slate-300 dark:bg-white/20'
+                    }`}>
+                      <span className={`absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
+                        emailUpdates ? 'translate-x-4' : 'translate-x-0'
+                      }`}></span>
                     </div>
-                  </label>
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -255,7 +310,7 @@ export default function SettingsPage() {
             {activeTab === 'help' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                 <h3 className="text-lg font-bold font-outfit">Documentation & Help</h3>
-                <div className="space-y-2 text-sm text-white/90 bg-white/5 p-4 rounded-xl border border-white/10">
+                <div className="space-y-2 text-sm text-slate-700 dark:text-white/90 bg-slate-50 dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10">
                   <p><strong>SparkStudio AI</strong> runs a lightning-fast parallel multi-agent loop:</p>
                   <ol className="list-decimal pl-5 space-y-1 mt-2 text-muted-foreground marker:text-purple-400">
                     <li><strong>Research Agent</strong> scans trends and pain points.</li>
@@ -270,7 +325,7 @@ export default function SettingsPage() {
 
             {/* Save Button */}
             {activeTab !== 'help' && (
-              <div className="pt-6 mt-6 border-t border-white/10 flex justify-end">
+              <div className="pt-6 mt-6 border-t border-slate-200 dark:border-white/10 flex justify-end">
                 <button
                   type="submit"
                   className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 transition-all font-semibold shadow-lg shadow-purple-500/20 hover:scale-105 active:scale-95"

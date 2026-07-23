@@ -192,13 +192,15 @@ export default function ProjectResultPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-white/10 overflow-x-auto">
+      <div className="flex border-b border-gray-200 dark:border-white/10 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-6 py-3 font-medium text-sm transition-all relative whitespace-nowrap ${
-              activeTab === tab.id ? 'text-white' : 'text-muted-foreground hover:text-white/80'
+              activeTab === tab.id 
+                ? 'text-foreground font-semibold' 
+                : 'text-muted-foreground hover:text-foreground/80'
             }`}
           >
             {tab.label}
