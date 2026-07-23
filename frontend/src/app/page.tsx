@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 
 export default function LandingPage() {
   const [sessionUser, setSessionUser] = useState<any>(null);
+  const [proPaymentLink, setProPaymentLink] = useState('https://buy.stripe.com/your-mock-pro-link');
+  const [teamPaymentLink, setTeamPaymentLink] = useState('https://buy.stripe.com/your-mock-team-link');
 
   useEffect(() => {
     const supabase = createClient();
@@ -21,6 +23,13 @@ export default function LandingPage() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSessionUser(session?.user ?? null);
     });
+
+    // Load custom payment links from localStorage if configured in settings
+    const savedPro = localStorage.getItem('sparkstudio-stripe-pro');
+    if (savedPro) setProPaymentLink(savedPro);
+
+    const savedTeam = localStorage.getItem('sparkstudio-stripe-team');
+    if (savedTeam) setTeamPaymentLink(savedTeam);
 
     return () => subscription.unsubscribe();
   }, []);
@@ -303,7 +312,9 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link
-                href="/dashboard/new"
+                href={plan.name === 'Pro' ? proPaymentLink : plan.name === 'Team' ? teamPaymentLink : '/dashboard/new'}
+                target={plan.name !== 'Free' ? '_blank' : undefined}
+                rel={plan.name !== 'Free' ? 'noopener noreferrer' : undefined}
                 className={`block w-full text-center py-3.5 rounded-full font-bold text-sm tracking-wide transition-all ${
                   plan.featured
                     ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 !text-white shadow-lg shadow-purple-500/30'

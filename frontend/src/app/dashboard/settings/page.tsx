@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sliders, Bell, Palette, Download, HelpCircle, Save, Sun, Moon, Check } from 'lucide-react';
+import { Sliders, Bell, Palette, Download, HelpCircle, Save, Sun, Moon, Check, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/providers/theme-provider';
 
@@ -19,6 +19,8 @@ export default function SettingsPage() {
   const [autoDownload, setAutoDownload] = useState(false);
   const [browserNotifications, setBrowserNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
+  const [stripeProLink, setStripeProLink] = useState('https://buy.stripe.com/your-mock-pro-link');
+  const [stripeTeamLink, setStripeTeamLink] = useState('https://buy.stripe.com/your-mock-team-link');
 
   // Sync initial state from localStorage and Theme context on mount
   useEffect(() => {
@@ -46,6 +48,12 @@ export default function SettingsPage() {
 
     const savedEmailUpdates = localStorage.getItem('sparkstudio-email-updates');
     if (savedEmailUpdates) setEmailUpdates(savedEmailUpdates === 'true');
+
+    const savedStripePro = localStorage.getItem('sparkstudio-stripe-pro');
+    if (savedStripePro) setStripeProLink(savedStripePro);
+
+    const savedStripeTeam = localStorage.getItem('sparkstudio-stripe-team');
+    if (savedStripeTeam) setStripeTeamLink(savedStripeTeam);
   }, [theme]);
 
   const handleSave = (e: React.FormEvent) => {
@@ -62,6 +70,8 @@ export default function SettingsPage() {
     localStorage.setItem('sparkstudio-autodownload', String(autoDownload));
     localStorage.setItem('sparkstudio-browser-notifications', String(browserNotifications));
     localStorage.setItem('sparkstudio-email-updates', String(emailUpdates));
+    localStorage.setItem('sparkstudio-stripe-pro', stripeProLink);
+    localStorage.setItem('sparkstudio-stripe-team', stripeTeamLink);
 
     toast.success('Configuration saved successfully!');
   };
@@ -71,6 +81,7 @@ export default function SettingsPage() {
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'export', label: 'Export Defaults', icon: Download },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'payments', label: 'Payment Links', icon: CreditCard },
     { id: 'help', label: 'Help & Docs', icon: HelpCircle },
   ];
 
@@ -303,6 +314,39 @@ export default function SettingsPage() {
                       }`}></span>
                     </div>
                   </button>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'payments' && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-bold font-outfit">Payment Links</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Configure your real Stripe Payment Links, PayPal.me, or Buy Me a Coffee URLs to receive pricing plan checkout funds directly.</p>
+                </div>
+                
+                <div className="space-y-4 max-w-md">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Pro Plan Stripe / Checkout Link</label>
+                    <input 
+                      type="url"
+                      value={stripeProLink}
+                      onChange={(e) => setStripeProLink(e.target.value)}
+                      placeholder="e.g. https://buy.stripe.com/your-pro-link"
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:border-purple-500 focus:outline-none transition-colors font-medium"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Team Plan Stripe / Checkout Link</label>
+                    <input 
+                      type="url"
+                      value={stripeTeamLink}
+                      onChange={(e) => setStripeTeamLink(e.target.value)}
+                      placeholder="e.g. https://buy.stripe.com/your-team-link"
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:border-purple-500 focus:outline-none transition-colors font-medium"
+                    />
+                  </div>
                 </div>
               </motion.div>
             )}
