@@ -41,7 +41,8 @@ async def create_project(project_input: ProjectInput):
     }
     fake_db[project_id] = project_data
     
-    if supabase:
+    user_email = project_input.user_email
+    if supabase and user_email:
         try:
             supabase.table("projects").upsert({
                 "id": project_id,
@@ -250,15 +251,13 @@ async def get_projects(email: Optional[str] = None):
     """
     List all generated projects.
     """
-    if not email:
-        return []
-
     projects_list = []
     
     if supabase:
         try:
             query = supabase.table("projects").select("id", "status", "input", "created_at")
-            query = query.eq("input->>user_email", email)
+            if email:
+                query = query.eq("input->>user_email", email)
             res = query.execute()
             if res.data:
                 for db_data in res.data:
@@ -272,22 +271,25 @@ async def get_projects(email: Optional[str] = None):
                     })
                 return projects_list
             else:
-                return []
+                if email:
+                    return []
         except Exception as e:
             logger.warning(f"Failed to list projects from Supabase: {e}")
 
-    # Fallback to fake_db (filtered by email)
-    return [
-        {
+    # Fallback to fake_db (optionally filtered by email)
+    for pid, data in fake_db.items():
+        input_data = data.get("input", {})
+        user_email = input_data.get("user_email")
+        if email and user_email != email:
+            continue
+        projects_list.append({
             "id": pid,
-            "topic": data.get("input", {}).get("topic", "Untitled"),
-            "platform": data.get("input", {}).get("platform", "YouTube Shorts"),
+            "topic": input_data.get("topic", "Untitled"),
+            "platform": input_data.get("platform", "YouTube Shorts"),
             "status": data.get("status", "completed"),
             "created_at": data.get("created_at", "")
-        }
-        for pid, data in fake_db.items()
-        if data.get("input", {}).get("user_email") == email
-    ]
+        })
+    return projects_list
 
 @router.delete("/project/{project_id}")
 async def delete_project(project_id: str):
