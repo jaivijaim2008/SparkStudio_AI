@@ -343,3 +343,57 @@ async def summarize_youtube(request_data: YouTubeSummarizeRequest, request: Requ
         logger.error(f"Error summarizing YouTube video: {exc}")
         raise HTTPException(status_code=500, detail=f"Failed to generate summary: {str(exc)}")
 
+
+from fastapi import UploadFile, File
+
+@router.post("/linkedin/generate-post")
+async def generate_linkedin_post(file: UploadFile = File(...)):
+    """
+    Extract certificate details and generate a professional LinkedIn post using multimodal AI.
+    """
+    from backend.services.llm_service import LLMService
+    
+    # Validate MIME type
+    allowed_types = ["application/pdf", "image/png", "image/jpeg", "image/jpg"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400, 
+            detail="Invalid file type. Please upload a PDF, JPG, JPEG, or PNG certificate."
+        )
+
+    try:
+        file_bytes = await file.read()
+        
+        system_prompt = (
+            "You are an expert professional branding consultant and LinkedIn copywriter. "
+            "Your task is to analyze the uploaded certificate document/image and write an engaging, "
+            "professional, and human-like LinkedIn post congratulating the user on their achievement."
+        )
+        
+        prompt = (
+            "Please analyze the uploaded certificate and extract the key details such as the "
+            "certificate title, issuing organization, completion date, and any relevant skills or achievements. "
+            "Using these details, write a compelling LinkedIn post that includes:\n\n"
+            "1. A congratulatory opening expressing excitement.\n"
+            "2. A brief, professional description of what the certification is about and its significance.\n"
+            "3. Bullet points of key skills learned or concepts covered.\n"
+            "4. A note of gratitude to the issuing organization if applicable.\n"
+            "5. Appropriate professional hashtags (e.g., #Certification #Learning #ProfessionalDevelopment #AI #DataScience).\n\n"
+            "Keep the tone professional, inspiring, and engaging. Write only the post content ready for copy-pasting."
+        )
+
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            llm = LLMService(client)
+            generated_post = await llm.generate_multimodal(
+                prompt=prompt,
+                file_bytes=file_bytes,
+                mime_type=file.content_type,
+                system_prompt=system_prompt
+            )
+            
+            return {"status": "success", "post": generated_post.strip()}
+            
+    except Exception as e:
+        logger.error(f"Failed to generate LinkedIn post from certificate: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to process certificate: {str(e)}")
+
