@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowRight, Bot, Video, Mic, Play, Sparkles, LayoutTemplate, PenTool, Zap, Shield, Globe, Check, LogOut, User } from 'lucide-react';
+import { ArrowRight, Bot, Video, Mic, Play, Sparkles, LayoutTemplate, PenTool, Zap, Shield, Globe, Check, LogOut, User, Wand2, Rocket } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -350,8 +350,8 @@ export default function LandingPage() {
             </span>
             <span>© 2026 SparkStudio AI · Empowering creators with AI-powered content generation.</span>
             <span className="flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-              <Video className="w-3.5 h-3.5 text-pink-400" />
+              <Wand2 className="w-3.5 h-3.5 text-cyan-400" />
+              <Rocket className="w-3.5 h-3.5 text-pink-500" />
             </span>
           </div>
           <div className="flex items-center gap-4">
