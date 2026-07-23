@@ -373,3 +373,102 @@ async def summarize_youtube(request_data: YouTubeSummarizeRequest, request: Requ
         raise HTTPException(status_code=500, detail=f"Failed to generate summary: {str(exc)}")
 
 
+from fastapi import UploadFile, File
+
+@router.post("/linkedin/generate-post")
+async def generate_linkedin_post(file: UploadFile = File(...)):
+    """
+    Extract certificate details and generate a professional LinkedIn post using multimodal AI.
+    """
+    from backend.services.llm_service import LLMService
+    # Validate MIME type (with extension-based fallback in case the browser sends application/octet-stream)
+    import mimetypes
+    mime_type = file.content_type
+    if not mime_type or mime_type in ["application/octet-stream", ""]:
+        mime_type = mimetypes.guess_type(file.filename or "")[0] or "application/octet-stream"
+
+    # Normalize image/jpg to image/jpeg
+    if mime_type == "image/jpg":
+        mime_type = "image/jpeg"
+
+    allowed_types = ["application/pdf", "image/png", "image/jpeg"]
+    if mime_type not in allowed_types:
+        # Final fallback check on extension
+        ext = (file.filename or "").split(".")[-1].lower() if "." in (file.filename or "") else ""
+        if ext == "pdf":
+            mime_type = "application/pdf"
+        elif ext == "png":
+            mime_type = "image/png"
+        elif ext in ["jpg", "jpeg"]:
+            mime_type = "image/jpeg"
+        else:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid file type ({mime_type}). Please upload a PDF, JPG, JPEG, or PNG certificate."
+            )
+
+    try:
+        file_bytes = await file.read()
+        
+        system_prompt = (
+            "You are an expert professional branding consultant, OCR parser, and LinkedIn copywriter. "
+            "Your task is to analyze the uploaded certificate document/image and return a JSON object containing "
+            "the generated post and key extracted details."
+        )
+        
+        prompt = (
+            "Analyze the uploaded certificate and extract key details: the certificate title, "
+            "issuing organization, and a list of key skills learned.\n"
+            "Using those details, write a compelling LinkedIn post that includes:\n"
+            "1. A congratulatory opening expressing excitement.\n"
+            "2. A brief, professional description of what the certification is about and its significance.\n"
+            "3. Bullet points of key skills learned or concepts covered.\n"
+            "4. A note of gratitude to the issuing organization if applicable.\n"
+            "5. Appropriate professional hashtags (e.g., #Certification #Learning #ProfessionalDevelopment #AI #DataScience).\n\n"
+            "Respond ONLY with a valid JSON object matching the following structure (do not include markdown formatting or backticks around the JSON):\n"
+            "{\n"
+            "  \"post\": \"<the full generated LinkedIn post text here>\",\n"
+            "  \"extracted_details\": {\n"
+            "    \"title\": \"<extracted certificate title>\",\n"
+            "    \"issuer\": \"<extracted issuing organization>\",\n"
+            "    \"skills\": [\"<skill 1>\", \"<skill 2>\", \"<skill 3>\"]\n"
+            "  }\n"
+            "}"
+        )
+
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            llm = LLMService(client)
+            generated_post = await llm.generate_multimodal(
+                prompt=prompt,
+                file_bytes=file_bytes,
+                mime_type=mime_type,
+                system_prompt=system_prompt
+            )
+            
+            # Clean JSON string from potential markdown wrapper
+            clean_post = generated_post.strip()
+            if clean_post.startswith("```"):
+                lines = clean_post.splitlines()
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines[-1].startswith("```"):
+                    lines = lines[:-1]
+                clean_post = "\n".join(lines).strip()
+            
+            try:
+                res_data = json.loads(clean_post)
+            except Exception:
+                res_data = {
+                    "post": generated_post,
+                    "extracted_details": {
+                        "title": "Professional Certification",
+                        "issuer": "Recognized Institution",
+                        "skills": []
+                    }
+                }
+                
+            return res_data
+            
+    except Exception as e:
+        logger.error(f"Failed to generate LinkedIn post from certificate: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to process certificate: {str(e)}")

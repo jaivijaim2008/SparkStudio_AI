@@ -67,15 +67,6 @@ export default function NewProject() {
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const [formData, setFormData] = useState({
-    topic: '',
-    platform: 'YouTube Shorts',
-    audience: 'General',
-    tone: 'Informative',
-    language: 'English',
-    video_length: 60,
-  });
-
   // Certificate state for LinkedIn
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -88,9 +79,25 @@ export default function NewProject() {
   } | null>(null);
   const [isCopied, setIsCopied] = useState(false);
 
+  const [formData, setFormData] = useState({
+    topic: '',
+    platform: 'YouTube Shorts',
+    audience: 'General',
+    tone: 'Informative',
+    language: 'English',
+    video_length: 60,
+  });
+
+  // Lucide LinkedIn icon import wrapper helper
+  const LinkedinIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+    </svg>
+  );
+
   const platforms = [
     { name: 'YouTube Shorts', icon: Smartphone, length: 60 },
-    { name: 'LinkedIn', icon: LinkedinIcon, length: 120 },
+    { name: 'LinkedIn', icon: LinkedinIcon, length: 60 },
     { name: 'Instagram Reels', icon: Smartphone, length: 60 },
     { name: 'YouTube Long', icon: Video, length: 600 },
   ];
@@ -170,6 +177,7 @@ export default function NewProject() {
     });
   };
 
+
   const handleFileChange = (file: File | null) => {
     if (!file) return;
 
@@ -219,35 +227,27 @@ export default function NewProject() {
     setIsExtracting(true);
 
     try {
-      let rawText = '';
-      if (certificateFile.type.includes('text') || certificateFile.name.endsWith('.txt')) {
-        rawText = await certificateFile.text();
-      }
+      const fd = new FormData();
+      fd.append('file', certificateFile);
 
-      const response = await fetch(apiUrl('/api/extract-certificate'), {
+      const response = await fetch(apiUrl('/api/linkedin/generate-post'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: certificateFile.name,
-          extracted_text: rawText,
-          user_notes: formData.topic,
-          tone: formData.tone,
-        }),
+        body: fd,
       });
 
       if (response.ok) {
         const data = await response.json();
-        setLinkedinPost(data.linkedin_post);
+        setLinkedinPost(data.post);
         setExtractedDetails({
-          title: data.certificate_title,
-          issuer: data.issuing_organization,
-          skills: data.skills,
+          title: data.extracted_details?.title || 'Professional Certification',
+          issuer: data.extracted_details?.issuer || 'Recognized Institution',
+          skills: data.extracted_details?.skills || [],
         });
 
-        if (!formData.topic) {
+        if (!formData.topic && data.extracted_details?.title) {
           setFormData((prev) => ({
             ...prev,
-            topic: `Certification in ${data.certificate_title} from ${data.issuing_organization}`,
+            topic: `Certification in ${data.extracted_details.title} from ${data.extracted_details.issuer || 'Recognized Institution'}`,
           }));
         }
         toast.success('LinkedIn post generated successfully!');
