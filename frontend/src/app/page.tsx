@@ -343,9 +343,17 @@ export default function LandingPage() {
             </div>
             <span className="font-outfit font-bold text-sm">SparkStudio AI</span>
           </div>
-          <p className="text-xs text-muted-foreground text-center">
-            © 2026 SparkStudio AI · Empowering creators with AI-powered content generation.
-          </p>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground text-center flex-wrap justify-center">
+            <span className="flex items-center gap-1">
+              <Bot className="w-3.5 h-3.5 text-purple-500" />
+              <Zap className="w-3 h-3 text-yellow-500" />
+            </span>
+            <span>© 2026 SparkStudio AI · Empowering creators with AI-powered content generation.</span>
+            <span className="flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+              <Video className="w-3.5 h-3.5 text-pink-400" />
+            </span>
+          </div>
           <div className="flex items-center gap-4">
             <a href="#features" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#pricing" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
