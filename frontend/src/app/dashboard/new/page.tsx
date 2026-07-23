@@ -34,6 +34,13 @@ export default function NewProject() {
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // LinkedIn Certificate States
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
+  const [isGeneratingLinkedIn, setIsGeneratingLinkedIn] = useState(false);
+  const [linkedInPost, setLinkedInPost] = useState<string>('');
+  const [linkedInCopied, setLinkedInCopied] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+
   const [formData, setFormData] = useState({
     topic: '',
     platform: 'YouTube Shorts',
@@ -43,9 +50,16 @@ export default function NewProject() {
     video_length: 60,
   });
 
+  // Lucide LinkedIn icon import wrapper helper
+  const LinkedinIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+    </svg>
+  );
+
   const platforms = [
     { name: 'YouTube Shorts', icon: Smartphone, length: 60 },
-    { name: 'TikTok', icon: Smartphone, length: 60 },
+    { name: 'LinkedIn', icon: LinkedinIcon, length: 60 },
     { name: 'Instagram Reels', icon: Smartphone, length: 60 },
     { name: 'YouTube Long', icon: Video, length: 600 },
   ];
@@ -165,6 +179,75 @@ export default function NewProject() {
         </p>
       );
     });
+  };
+  const handleLinkedInFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+      if (!allowed.includes(file.type)) {
+        toast.error('Invalid file type. Please upload a PDF, JPG, JPEG, or PNG certificate.');
+        return;
+      }
+      setCertificateFile(file);
+      toast.success('Certificate selected!');
+    }
+  };
+
+  const handleLinkedInDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+      if (!allowed.includes(file.type)) {
+        toast.error('Invalid file type. Please upload a PDF, JPG, JPEG, or PNG certificate.');
+        return;
+      }
+      setCertificateFile(file);
+      toast.success('Certificate dropped!');
+    }
+  };
+
+  const handleLinkedInSubmit = async () => {
+    if (!certificateFile) {
+      toast.error('Please upload a certificate first.');
+      return;
+    }
+
+    setIsGeneratingLinkedIn(true);
+    setLinkedInPost('');
+
+    try {
+      const fd = new FormData();
+      fd.append('file', certificateFile);
+
+      const response = await fetch(apiUrl('/api/linkedin/generate-post'), {
+        method: 'POST',
+        body: fd
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to process certificate.');
+      }
+
+      const resData = await response.json();
+      setLinkedInPost(resData.post);
+      toast.success('LinkedIn post generated successfully!');
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || 'Failed to generate post.');
+    } finally {
+      setIsGeneratingLinkedIn(false);
+    }
+  };
+
+  const handleCopyLinkedIn = () => {
+    if (!linkedInPost) return;
+    navigator.clipboard.writeText(linkedInPost);
+    setLinkedInCopied(true);
+    toast.success('Copied post to clipboard!');
+    setTimeout(() => setLinkedInCopied(false), 2000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -423,6 +506,123 @@ export default function NewProject() {
               })}
             </div>
           </div>
+
+          {/* LinkedIn Certificate Uploader & Post Generator */}
+          {formData.platform === 'LinkedIn' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="space-y-5 border-t border-slate-200 dark:border-white/10 pt-6"
+            >
+              <h3 className="text-base font-bold font-outfit text-slate-800 dark:text-purple-300">Upload Certificate</h3>
+              
+              <div
+                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={handleLinkedInDrop}
+                className={`flex flex-col items-center justify-center p-8 rounded-xl border-2 border-dashed transition-all cursor-pointer ${
+                  isDragOver
+                    ? 'border-purple-500 bg-purple-500/5'
+                    : 'border-slate-300 dark:border-white/20 bg-slate-50 dark:bg-white/5 hover:border-purple-500/50 dark:hover:border-purple-500/30'
+                }`}
+                onClick={() => document.getElementById('linkedin-file-picker')?.click()}
+              >
+                <input
+                  type="file"
+                  id="linkedin-file-picker"
+                  onChange={handleLinkedInFileChange}
+                  accept=".pdf,image/png,image/jpeg,image/jpg"
+                  className="hidden"
+                />
+                <FileText className="w-10 h-10 text-slate-400 mb-3" />
+                <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">
+                  {certificateFile ? certificateFile.name : 'Drag & drop certificate here, or browse'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Supports PDF, JPG, JPEG, or PNG up to 10MB
+                </p>
+                {certificateFile && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCertificateFile(null);
+                      setLinkedInPost('');
+                    }}
+                    className="mt-3 text-xs text-red-500 dark:text-red-400 hover:underline"
+                  >
+                    Remove File
+                  </button>
+                )}
+              </div>
+
+              {certificateFile && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    disabled={isGeneratingLinkedIn}
+                    onClick={handleLinkedInSubmit}
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold hover:scale-105 transition-all shadow-md disabled:opacity-50"
+                  >
+                    {isGeneratingLinkedIn ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Analyzing Certificate...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4" />
+                        Generate LinkedIn Post
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Editable LinkedIn Post Area */}
+              {linkedInPost && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="glass-card p-6 border-purple-500/20 space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-slate-800 dark:text-purple-300">Generated Post</span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCopyLinkedIn}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 text-xs font-semibold text-slate-700 dark:text-gray-300 transition-all"
+                      >
+                        {linkedInCopied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                        {linkedInCopied ? 'Copied' : 'Copy'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleLinkedInSubmit}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 text-xs font-semibold text-slate-700 dark:text-gray-300 transition-all"
+                      >
+                        <Wand2 className="w-3.5 h-3.5 text-slate-400" />
+                        Regenerate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toast.info('LinkedIn direct integration coming soon!')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-bold text-white transition-all shadow-sm"
+                      >
+                        Post to LinkedIn
+                      </button>
+                    </div>
+                  </div>
+                  <textarea
+                    value={linkedInPost}
+                    onChange={(e) => setLinkedInPost(e.target.value)}
+                    className="w-full min-h-[180px] p-4 rounded-lg bg-white/5 border border-slate-200 dark:border-white/10 focus:border-purple-500/50 outline-none resize-none text-slate-900 dark:text-white leading-relaxed"
+                  />
+                </motion.div>
+              )}
+            </motion.div>
+          )}
 
           {/* Details Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
