@@ -45,7 +45,6 @@ export default function NewProject() {
 
   const platforms = [
     { name: 'YouTube Shorts', icon: Smartphone, length: 60 },
-    { name: 'TikTok', icon: Smartphone, length: 60 },
     { name: 'Instagram Reels', icon: Smartphone, length: 60 },
     { name: 'YouTube Long', icon: Video, length: 600 },
   ];
@@ -402,7 +401,7 @@ export default function NewProject() {
           {/* Platform Selection */}
           <div className="space-y-3">
             <label className="text-sm font-medium">Platform</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {platforms.map((platform) => {
                 const isSelected = formData.platform === platform.name;
                 return (
