@@ -7,10 +7,11 @@ import logging
 from typing import Optional
 from supabase import create_client, Client
 
-from backend.models.schemas import ProjectInput
+from backend.models.schemas import ProjectInput, CertificateExtractRequest, CertificateExtractResponse
 from backend.services.orchestrator import PipelineOrchestrator
 from backend.services.llm_service import LLMService
 from backend.services.export_service import ExportService
+from backend.services.certificate_service import CertificateService
 from backend.config import settings
 
 logger = logging.getLogger("creatorpilot.api")
@@ -314,6 +315,34 @@ async def delete_project(project_id: str):
     raise HTTPException(status_code=404, detail="Project not found")
 
 
+@router.post("/extract-certificate", response_model=CertificateExtractResponse)
+async def extract_certificate(payload: CertificateExtractRequest):
+    """
+    Extract certificate details (title, issuer, date, skills) and generate a LinkedIn post.
+    """
+    try:
+        extracted = CertificateService.extract_certificate_info(
+            filename=payload.filename,
+            raw_text=payload.extracted_text or "",
+            user_notes=payload.user_notes or ""
+        )
+        linkedin_post = CertificateService.generate_linkedin_post(
+            extracted_info=extracted,
+            custom_tone=payload.tone or "Professional"
+        )
+        return CertificateExtractResponse(
+            certificate_title=extracted["certificate_title"],
+            issuing_organization=extracted["issuing_organization"],
+            completion_date=extracted["completion_date"],
+            skills=extracted["skills"],
+            achievements=extracted["achievements"],
+            linkedin_post=linkedin_post
+        )
+    except Exception as e:
+        logger.error(f"Error extracting certificate info: {e}")
+        raise HTTPException(status_code=500, detail=f"Certificate processing failed: {str(e)}")
+
+
 class YouTubeSummarizeRequest(BaseModel):
     url: str
 
@@ -365,21 +394,29 @@ async def generate_linkedin_post(file: UploadFile = File(...)):
         file_bytes = await file.read()
         
         system_prompt = (
-            "You are an expert professional branding consultant and LinkedIn copywriter. "
-            "Your task is to analyze the uploaded certificate document/image and write an engaging, "
-            "professional, and human-like LinkedIn post congratulating the user on their achievement."
+            "You are an expert professional branding consultant, OCR parser, and LinkedIn copywriter. "
+            "Your task is to analyze the uploaded certificate document/image and return a JSON object containing "
+            "the generated post and key extracted details."
         )
         
         prompt = (
-            "Please analyze the uploaded certificate and extract the key details such as the "
-            "certificate title, issuing organization, completion date, and any relevant skills or achievements. "
-            "Using these details, write a compelling LinkedIn post that includes:\n\n"
+            "Analyze the uploaded certificate and extract key details: the certificate title, "
+            "issuing organization, and a list of key skills learned.\n"
+            "Using those details, write a compelling LinkedIn post that includes:\n"
             "1. A congratulatory opening expressing excitement.\n"
             "2. A brief, professional description of what the certification is about and its significance.\n"
             "3. Bullet points of key skills learned or concepts covered.\n"
             "4. A note of gratitude to the issuing organization if applicable.\n"
             "5. Appropriate professional hashtags (e.g., #Certification #Learning #ProfessionalDevelopment #AI #DataScience).\n\n"
-            "Keep the tone professional, inspiring, and engaging. Write only the post content ready for copy-pasting."
+            "Respond ONLY with a valid JSON object matching the following structure (do not include markdown formatting or backticks around the JSON):\n"
+            "{\n"
+            "  \"post\": \"<the full generated LinkedIn post text here>\",\n"
+            "  \"extracted_details\": {\n"
+            "    \"title\": \"<extracted certificate title>\",\n"
+            "    \"issuer\": \"<extracted issuing organization>\",\n"
+            "    \"skills\": [\"<skill 1>\", \"<skill 2>\", \"<skill 3>\"]\n"
+            "  }\n"
+            "}"
         )
 
         async with httpx.AsyncClient(timeout=120.0) as client:
@@ -391,9 +428,30 @@ async def generate_linkedin_post(file: UploadFile = File(...)):
                 system_prompt=system_prompt
             )
             
-            return {"status": "success", "post": generated_post.strip()}
+            # Clean JSON string from potential markdown wrapper
+            clean_post = generated_post.strip()
+            if clean_post.startswith("```"):
+                lines = clean_post.splitlines()
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines[-1].startswith("```"):
+                    lines = lines[:-1]
+                clean_post = "\n".join(lines).strip()
+            
+            try:
+                res_data = json.loads(clean_post)
+            except Exception:
+                res_data = {
+                    "post": generated_post,
+                    "extracted_details": {
+                        "title": "Professional Certification",
+                        "issuer": "Recognized Institution",
+                        "skills": []
+                    }
+                }
+                
+            return res_data
             
     except Exception as e:
         logger.error(f"Failed to generate LinkedIn post from certificate: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to process certificate: {str(e)}")
-

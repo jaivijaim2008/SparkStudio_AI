@@ -30,8 +30,8 @@ class ProjectInput(BaseModel):
     )
     platform: str = Field(
         default="YouTube Shorts",
-        description="Target platform (YouTube Shorts, TikTok, Instagram Reels, YouTube Long-form)",
-        examples=["YouTube Shorts", "TikTok", "Instagram Reels"],
+        description="Target platform (YouTube Shorts, LinkedIn, Instagram Reels, YouTube Long-form)",
+        examples=["YouTube Shorts", "LinkedIn", "Instagram Reels"],
     )
     audience: str = Field(
         default="General",
@@ -230,3 +230,24 @@ class ProjectResult(BaseModel):
     voice: Optional[VoiceOutput] = Field(default=None)
     quality: Optional[QualityOutput] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow, description="When the project was created")
+
+
+class CertificateExtractRequest(BaseModel):
+    """Request payload for extracting certificate details & generating a LinkedIn post."""
+
+    filename: str = Field(..., description="Uploaded certificate file name")
+    extracted_text: Optional[str] = Field(default="", description="Raw text extracted from PDF or OCR")
+    user_notes: Optional[str] = Field(default="", description="Additional notes or topic context")
+    tone: Optional[str] = Field(default="Professional", description="Tone for the LinkedIn post")
+
+
+class CertificateExtractResponse(BaseModel):
+    """Response payload containing extracted certificate info & generated post."""
+
+    certificate_title: str
+    issuing_organization: str
+    completion_date: str
+    skills: list[str]
+    achievements: str
+    linkedin_post: str
+
