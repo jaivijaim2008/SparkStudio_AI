@@ -347,7 +347,6 @@ export default function LandingPage() {
             </div>
             <span className="font-outfit font-bold text-sm">SparkStudio AI</span>
           </div>
-          <p className="text-xs text-muted-foreground">© 2026 SparkStudio AI. Built with ❤️ for the Zero to One Hackathon.</p>
           <div className="flex items-center gap-4">
             <a href="#features" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#pricing" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
