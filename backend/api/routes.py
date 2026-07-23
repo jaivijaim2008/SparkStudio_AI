@@ -381,14 +381,31 @@ async def generate_linkedin_post(file: UploadFile = File(...)):
     Extract certificate details and generate a professional LinkedIn post using multimodal AI.
     """
     from backend.services.llm_service import LLMService
-    
-    # Validate MIME type
-    allowed_types = ["application/pdf", "image/png", "image/jpeg", "image/jpg"]
-    if file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=400, 
-            detail="Invalid file type. Please upload a PDF, JPG, JPEG, or PNG certificate."
-        )
+    # Validate MIME type (with extension-based fallback in case the browser sends application/octet-stream)
+    import mimetypes
+    mime_type = file.content_type
+    if not mime_type or mime_type in ["application/octet-stream", ""]:
+        mime_type = mimetypes.guess_type(file.filename or "")[0] or "application/octet-stream"
+
+    # Normalize image/jpg to image/jpeg
+    if mime_type == "image/jpg":
+        mime_type = "image/jpeg"
+
+    allowed_types = ["application/pdf", "image/png", "image/jpeg"]
+    if mime_type not in allowed_types:
+        # Final fallback check on extension
+        ext = (file.filename or "").split(".")[-1].lower() if "." in (file.filename or "") else ""
+        if ext == "pdf":
+            mime_type = "application/pdf"
+        elif ext == "png":
+            mime_type = "image/png"
+        elif ext in ["jpg", "jpeg"]:
+            mime_type = "image/jpeg"
+        else:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid file type ({mime_type}). Please upload a PDF, JPG, JPEG, or PNG certificate."
+            )
 
     try:
         file_bytes = await file.read()
@@ -424,7 +441,7 @@ async def generate_linkedin_post(file: UploadFile = File(...)):
             generated_post = await llm.generate_multimodal(
                 prompt=prompt,
                 file_bytes=file_bytes,
-                mime_type=file.content_type,
+                mime_type=mime_type,
                 system_prompt=system_prompt
             )
             
