@@ -41,7 +41,8 @@ async def create_project(project_input: ProjectInput):
     }
     fake_db[project_id] = project_data
     
-    if supabase:
+    user_email = project_input.user_email
+    if supabase and user_email:
         try:
             supabase.table("projects").upsert({
                 "id": project_id,
