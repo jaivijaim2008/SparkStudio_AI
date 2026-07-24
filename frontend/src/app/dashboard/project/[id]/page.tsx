@@ -171,6 +171,10 @@ export default function ProjectResultPage() {
   const getResearch = () => projectData?.research || {};
 
   const handleDownload = () => {
+    if (userPlan === 'free') {
+      toast.error('ZIP export is a Pro/Team plan feature. Upgrade to download all assets.');
+      return;
+    }
     const link = document.createElement('a');
     link.href = apiUrl(`/api/project/${projectId}/export`);
     link.download = `sparkstudio_${projectId}.pdf`;
@@ -231,8 +235,8 @@ export default function ProjectResultPage() {
         <div className="flex items-center gap-3 w-full sm:w-auto">
           {status === 'completed' && (
             <div className="mt-8 flex flex-wrap gap-4">
-              <button onClick={handleDownload} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-purple-500/25 border border-purple-500/50">
-                <Download className="w-5 h-5" /> Download ZIP
+              <button onClick={handleDownload} className={`flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-purple-500/25 border border-purple-500/50 ${userPlan === 'free' ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <Download className="w-5 h-5" /> Download ZIP {userPlan === 'free' ? '🔒 (Pro/Team)' : ''}
               </button>
               <button onClick={handleMarkdownExport} className={`flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all border border-white/10 ${userPlan === 'free' ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 <FileText className="w-5 h-5" /> Export Markdown {userPlan === 'free' ? '🔒 (Team)' : ''}

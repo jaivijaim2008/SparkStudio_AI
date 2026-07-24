@@ -475,7 +475,7 @@ export default function LandingPage() {
               price: '$0',
               period: '/forever',
               desc: 'Perfect for trying it out',
-              features: ['3 projects / day', 'All 9 AI agents', 'ZIP export', 'Community support'],
+              features: ['3 projects / day', 'All 9 AI agents', 'Community support'],
               cta: 'Get Started',
               featured: false,
             },
