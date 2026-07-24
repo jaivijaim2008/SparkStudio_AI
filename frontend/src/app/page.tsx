@@ -19,6 +19,7 @@ export default function LandingPage() {
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [razorpayEnabled, setRazorpayEnabled] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [userPlan, setUserPlan] = useState('free');
 
   const [claimEmail, setClaimEmail] = useState('');
   const [utrNumber, setUtrNumber] = useState('');
@@ -34,6 +35,27 @@ export default function LandingPage() {
       }
     }
   }, [upiModalOpen, sessionUser]);
+
+  useEffect(() => {
+    if (sessionUser) {
+      const supabase = createClient();
+      if (supabase) {
+        // Try by id first
+        supabase.from('profiles').select('plan').eq('id', sessionUser.id).maybeSingle().then(({ data }) => {
+          if (data?.plan) {
+            setUserPlan(data.plan);
+          } else if (sessionUser.email) {
+            // Fallback by email
+            supabase.from('profiles').select('plan').eq('email', sessionUser.email).maybeSingle().then(({ data: emailData }) => {
+              if (emailData?.plan) setUserPlan(emailData.plan);
+            });
+          }
+        });
+      }
+    } else {
+      setUserPlan('free');
+    }
+  }, [sessionUser]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -416,7 +438,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Pricing Section - Hidden for Premium Users */}
+      {userPlan === 'free' && (
       <section id="pricing" className="relative z-10 px-6 py-24 max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
