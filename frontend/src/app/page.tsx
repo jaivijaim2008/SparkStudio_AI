@@ -546,6 +546,7 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+      )}
 
       {/* Footer CTA */}
       <section className="relative z-10 px-6 py-24 max-w-4xl mx-auto text-center">
