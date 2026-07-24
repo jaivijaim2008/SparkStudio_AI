@@ -28,15 +28,29 @@ export default function LandingPage() {
       setSessionUser(session?.user ?? null);
     });
 
-    // Load custom payment links from localStorage if configured in settings
-    const savedPro = localStorage.getItem('sparkstudio-stripe-pro');
-    if (savedPro) setProPaymentLink(savedPro);
-
-    const savedTeam = localStorage.getItem('sparkstudio-stripe-team');
-    if (savedTeam) setTeamPaymentLink(savedTeam);
-
-    const savedUpi = localStorage.getItem('sparkstudio-upi-id');
-    if (savedUpi) setUpiId(savedUpi);
+    // Load custom payment links from backend with local overrides
+    fetch(apiUrl('/api/payments/config'))
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(data => {
+        const savedPro = localStorage.getItem('sparkstudio-stripe-pro') || data.stripe_pro_link;
+        if (savedPro) setProPaymentLink(savedPro);
+        
+        const savedTeam = localStorage.getItem('sparkstudio-stripe-team') || data.stripe_team_link;
+        if (savedTeam) setTeamPaymentLink(savedTeam);
+        
+        const savedUpi = localStorage.getItem('sparkstudio-upi-id') || data.upi_id;
+        if (savedUpi) setUpiId(savedUpi);
+      })
+      .catch(() => {
+        const savedPro = localStorage.getItem('sparkstudio-stripe-pro');
+        if (savedPro) setProPaymentLink(savedPro);
+        
+        const savedTeam = localStorage.getItem('sparkstudio-stripe-team');
+        if (savedTeam) setTeamPaymentLink(savedTeam);
+        
+        const savedUpi = localStorage.getItem('sparkstudio-upi-id');
+        if (savedUpi) setUpiId(savedUpi);
+      });
 
     return () => subscription.unsubscribe();
   }, []);

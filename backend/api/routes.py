@@ -481,3 +481,12 @@ async def health_check():
         "demo_mode": settings.DEMO_MODE,
         "llm_provider": settings.LLM_PROVIDER
     }
+
+@router.get("/payments/config")
+async def get_payments_config():
+    import os
+    return {
+        "stripe_pro_link": os.environ.get("STRIPE_PRO_LINK", "https://buy.stripe.com/your-mock-pro-link"),
+        "stripe_team_link": os.environ.get("STRIPE_TEAM_LINK", "https://buy.stripe.com/your-mock-team-link"),
+        "upi_id": os.environ.get("UPI_ID", "")
+    }

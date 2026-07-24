@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Sliders, Bell, Palette, Download, HelpCircle, Save, Sun, Moon, Check, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/providers/theme-provider';
+import { apiUrl } from '@/lib/api';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
@@ -51,13 +52,27 @@ export default function SettingsPage() {
     if (savedEmailUpdates) setEmailUpdates(savedEmailUpdates === 'true');
 
     const savedStripePro = localStorage.getItem('sparkstudio-stripe-pro');
-    if (savedStripePro) setStripeProLink(savedStripePro);
-
     const savedStripeTeam = localStorage.getItem('sparkstudio-stripe-team');
-    if (savedStripeTeam) setStripeTeamLink(savedStripeTeam);
-
     const savedUpiId = localStorage.getItem('sparkstudio-upi-id');
-    if (savedUpiId) setUpiId(savedUpiId);
+
+    if (!savedStripePro || !savedStripeTeam || !savedUpiId) {
+      fetch(apiUrl('/api/payments/config'))
+        .then(res => res.ok ? res.json() : Promise.reject())
+        .then(data => {
+          setStripeProLink(savedStripePro || data.stripe_pro_link);
+          setStripeTeamLink(savedStripeTeam || data.stripe_team_link);
+          setUpiId(savedUpiId || data.upi_id);
+        })
+        .catch(() => {
+          if (savedStripePro) setStripeProLink(savedStripePro);
+          if (savedStripeTeam) setStripeTeamLink(savedStripeTeam);
+          if (savedUpiId) setUpiId(savedUpiId);
+        });
+    } else {
+      setStripeProLink(savedStripePro);
+      setStripeTeamLink(savedStripeTeam);
+      setUpiId(savedUpiId);
+    }
   }, [theme]);
 
   const handleSave = (e: React.FormEvent) => {
