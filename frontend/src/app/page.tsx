@@ -3,12 +3,18 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowRight, Bot, Video, Mic, Play, Sparkles, LayoutTemplate, PenTool, Zap, Shield, Globe, Check, LogOut, User, Wand2, Rocket } from 'lucide-react';
+import { ArrowRight, Bot, Video, Mic, Play, Sparkles, LayoutTemplate, PenTool, Zap, Shield, Globe, Check, LogOut, User, X, Wand2, Rocket } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export default function LandingPage() {
   const [sessionUser, setSessionUser] = useState<any>(null);
+  const [proPaymentLink, setProPaymentLink] = useState('https://buy.stripe.com/your-mock-pro-link');
+  const [teamPaymentLink, setTeamPaymentLink] = useState('https://buy.stripe.com/your-mock-team-link');
+  const [upiId, setUpiId] = useState('');
+  const [upiModalOpen, setUpiModalOpen] = useState(false);
+  const [selectedPlanName, setSelectedPlanName] = useState('');
+  const [selectedPlanPrice, setSelectedPlanPrice] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -22,8 +28,31 @@ export default function LandingPage() {
       setSessionUser(session?.user ?? null);
     });
 
+    // Load custom payment links from localStorage if configured in settings
+    const savedPro = localStorage.getItem('sparkstudio-stripe-pro');
+    if (savedPro) setProPaymentLink(savedPro);
+
+    const savedTeam = localStorage.getItem('sparkstudio-stripe-team');
+    if (savedTeam) setTeamPaymentLink(savedTeam);
+
+    const savedUpi = localStorage.getItem('sparkstudio-upi-id');
+    if (savedUpi) setUpiId(savedUpi);
+
     return () => subscription.unsubscribe();
   }, []);
+
+  const handlePlanClick = (e: React.MouseEvent, plan: any) => {
+    if (plan.name === 'Free') return;
+
+    if (upiId) {
+      e.preventDefault();
+      setSelectedPlanName(plan.name);
+      const usdAmount = parseInt(plan.price.replace('$', '')) || 0;
+      const inrAmount = usdAmount === 19 ? 1599 : 3999;
+      setSelectedPlanPrice(inrAmount);
+      setUpiModalOpen(true);
+    }
+  };
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -303,7 +332,10 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link
-                href="/dashboard/new"
+                href={plan.name === 'Pro' ? proPaymentLink : plan.name === 'Team' ? teamPaymentLink : '/dashboard/new'}
+                target={plan.name !== 'Free' ? '_blank' : undefined}
+                rel={plan.name !== 'Free' ? 'noopener noreferrer' : undefined}
+                onClick={(e) => handlePlanClick(e, plan)}
                 className={`block w-full text-center py-3.5 rounded-full font-bold text-sm tracking-wide transition-all hover:scale-105 hover:shadow-xl hover:shadow-purple-500/30 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 !text-white shadow-lg shadow-purple-500/30`}
               >
                 {plan.cta}
@@ -336,19 +368,19 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-slate-200 dark:border-white/5 py-8 px-6 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 relative">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
               <Sparkles className="w-3 h-3 text-white" />
             </div>
             <span className="font-outfit font-bold text-sm">SparkStudio AI</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground text-center flex-wrap justify-center">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground text-center flex-wrap justify-center md:absolute md:left-1/2 md:-translate-x-1/2">
             <span className="flex items-center gap-1">
               <Bot className="w-3.5 h-3.5 text-purple-500" />
               <Zap className="w-3 h-3 text-yellow-500" />
             </span>
-            <span>© 2026 SparkStudio AI · Empowering creators with AI-powered content generation.</span>
+            <span>© {new Date().getFullYear()} SparkStudio AI · Empowering creators with AI-powered content generation.</span>
             <span className="flex items-center gap-1">
               <Wand2 className="w-3.5 h-3.5 text-cyan-400" />
               <Rocket className="w-3.5 h-3.5 text-pink-500" />
@@ -361,6 +393,71 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* UPI Checkout Modal */}
+      {upiModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md text-left">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-sm glass-card p-6 md:p-8 rounded-[32px] border border-purple-500/40 relative bg-white/95 dark:bg-zinc-950/95 shadow-2xl"
+          >
+            <button 
+              onClick={() => setUpiModalOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 transition-colors text-muted-foreground hover:text-foreground border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-black/40"
+            >
+              <X className="w-4 h-4 text-slate-800 dark:text-slate-200" />
+            </button>
+
+            <div className="text-center space-y-4 pt-2">
+              <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center mx-auto text-purple-600 dark:text-purple-400">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-bold font-outfit text-slate-950 dark:text-white">Upgrade to {selectedPlanName}</h3>
+                <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-500 font-outfit mt-1">
+                  ₹{selectedPlanPrice.toLocaleString('en-IN')} <span className="text-xs text-muted-foreground font-medium">/ month</span>
+                </p>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-black/30 p-4 rounded-2xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center gap-4">
+                {/* QR Code Container */}
+                <div className="bg-white p-3 rounded-2xl shadow-inner border border-slate-100 flex items-center justify-center">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                      `upi://pay?pa=${upiId}&pn=SparkStudio%20AI&am=${selectedPlanPrice}&cu=INR&tn=${encodeURIComponent(selectedPlanName + ' Plan Upgrade')}`
+                    )}`}
+                    alt="UPI Payment QR Code"
+                    className="w-40 h-40 block"
+                  />
+                </div>
+                
+                <div className="text-center space-y-1 w-full">
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Payee UPI ID</span>
+                  <p className="text-xs font-mono font-bold select-all bg-slate-100 dark:bg-white/5 px-2.5 py-1 rounded-md text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-white/5 overflow-hidden text-ellipsis">
+                    {upiId}
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Scan using any UPI App (GPay, PhonePe, Paytm, BHIM) to make the payment instantly.
+              </p>
+
+              {/* Direct UPI Intent Link (Mobile Support) */}
+              <div className="pt-2">
+                <a 
+                  href={`upi://pay?pa=${upiId}&pn=SparkStudio%20AI&am=${selectedPlanPrice}&cu=INR&tn=${encodeURIComponent(selectedPlanName + ' Plan Upgrade')}`}
+                  className="block w-full text-center py-3 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 font-bold text-sm text-white shadow-lg shadow-purple-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  Pay via UPI App
+                </a>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
