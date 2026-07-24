@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useTheme } from '@/components/providers/theme-provider';
 import { apiUrl } from '@/lib/api';
 import { createClient } from '@/lib/supabase';
+import Link from 'next/link';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
@@ -21,11 +22,15 @@ export default function SettingsPage() {
   const [autoDownload, setAutoDownload] = useState(false);
   const [browserNotifications, setBrowserNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
+  const [personas, setPersonas] = useState<{name: string, description: string}[]>([]);
+  const [newPersonaName, setNewPersonaName] = useState('');
+  const [newPersonaDesc, setNewPersonaDesc] = useState('');
   const [stripeProLink, setStripeProLink] = useState('https://buy.stripe.com/your-mock-pro-link');
   const [stripeTeamLink, setStripeTeamLink] = useState('https://buy.stripe.com/your-mock-team-link');
   const [upiId, setUpiId] = useState('');
 
   const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [userPlan, setUserPlan] = useState('free');
   const [claims, setClaims] = useState<any[]>([]);
   const [loadingClaims, setLoadingClaims] = useState(false);
 
@@ -36,6 +41,23 @@ export default function SettingsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.email) {
         setCurrentUserEmail(session.user.email);
+        
+        // Fetch user plan
+        let prof: any = null;
+        const { data: profById } = await supabase.from('profiles').select('plan').eq('id', session.user.id).maybeSingle();
+        if (profById) prof = profById;
+        else {
+          const { data: profByEmail } = await supabase.from('profiles').select('plan').eq('email', session.user.email).maybeSingle();
+          if (profByEmail) prof = profByEmail;
+        }
+        if (prof?.plan) {
+          setUserPlan(prof.plan);
+          // If free plan and tone is set to a premium one, reset it
+          if (prof.plan === 'free' && ['viral', 'storytelling', 'funny'].includes(localStorage.getItem('sparkstudio-tone') || '')) {
+            setTone('educational');
+            localStorage.setItem('sparkstudio-tone', 'educational');
+          }
+        }
       }
     };
     fetchUser();
@@ -125,6 +147,11 @@ export default function SettingsPage() {
     const savedEmailUpdates = localStorage.getItem('sparkstudio-email-updates');
     if (savedEmailUpdates) setEmailUpdates(savedEmailUpdates === 'true');
 
+    const savedPersonas = localStorage.getItem('sparkstudio-personas');
+    if (savedPersonas) {
+      try { setPersonas(JSON.parse(savedPersonas)); } catch (e) {}
+    }
+
     const savedStripePro = localStorage.getItem('sparkstudio-stripe-pro');
     const savedStripeTeam = localStorage.getItem('sparkstudio-stripe-team');
     const savedUpiId = localStorage.getItem('sparkstudio-upi-id');
@@ -163,6 +190,7 @@ export default function SettingsPage() {
     localStorage.setItem('sparkstudio-autodownload', String(autoDownload));
     localStorage.setItem('sparkstudio-browser-notifications', String(browserNotifications));
     localStorage.setItem('sparkstudio-email-updates', String(emailUpdates));
+    localStorage.setItem('sparkstudio-personas', JSON.stringify(personas));
     localStorage.setItem('sparkstudio-stripe-pro', stripeProLink);
     localStorage.setItem('sparkstudio-stripe-team', stripeTeamLink);
     localStorage.setItem('sparkstudio-upi-id', upiId);
@@ -231,19 +259,90 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Default Content Tone</label>
+                    <label className="text-sm font-medium text-muted-foreground flex justify-between">
+                      Default Content Tone
+                      {userPlan === 'free' && (
+                        <Link href="/dashboard" className="text-xs text-purple-500 hover:text-purple-400">Upgrade to unlock all</Link>
+                      )}
+                    </label>
                     <select 
                       value={tone}
                       onChange={(e) => setTone(e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:border-purple-500 focus:outline-none transition-colors"
                     >
                       <option value="educational">Educational & Professional</option>
-                      <option value="viral">Viral & High Energy</option>
-                      <option value="storytelling">Cinematic Storytelling</option>
-                      <option value="funny">Humorous & Casual</option>
+                      <option value="viral" disabled={userPlan === 'free'}>Viral & High Energy {userPlan === 'free' ? '🔒 (Pro/Team)' : ''}</option>
+                      <option value="storytelling" disabled={userPlan === 'free'}>Cinematic Storytelling {userPlan === 'free' ? '🔒 (Pro/Team)' : ''}</option>
+                      <option value="funny" disabled={userPlan === 'free'}>Humorous & Casual {userPlan === 'free' ? '🔒 (Pro/Team)' : ''}</option>
                     </select>
                   </div>
                 </div>
+
+                {/* Brand Personas (Team Plan Feature) */}
+                <div className="pt-6 border-t border-slate-200 dark:border-white/10 mt-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-md font-bold font-outfit flex items-center gap-2">
+                        Brand Personas 
+                        {userPlan !== 'team' && <span className="text-xs bg-purple-500/20 text-purple-500 px-2 py-0.5 rounded-full font-semibold">Team Plan</span>}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-1">Save custom instructions to automatically adapt AI generation to your channels.</p>
+                    </div>
+                  </div>
+
+                  <div className={`space-y-4 ${userPlan !== 'team' ? 'opacity-60 pointer-events-none grayscale select-none relative' : ''}`}>
+                    {userPlan !== 'team' && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[1px]">
+                        <Link href="/dashboard" className="px-4 py-2 bg-purple-600 text-white font-semibold rounded-full text-sm hover:scale-105 transition-transform shadow-lg shadow-purple-500/30">
+                          Upgrade to Team
+                        </Link>
+                      </div>
+                    )}
+                    
+                    {personas.map((p, i) => (
+                      <div key={i} className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 relative group">
+                        <div className="font-bold text-sm mb-1">{p.name}</div>
+                        <div className="text-xs text-muted-foreground">{p.description}</div>
+                        <button type="button" onClick={() => setPersonas(personas.filter((_, idx) => idx !== i))} className="absolute top-4 right-4 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {personas.length < 3 && (
+                      <div className="p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 space-y-3">
+                        <input 
+                          type="text" 
+                          placeholder="Persona Name (e.g. 'Tech Gaming Channel')" 
+                          value={newPersonaName}
+                          onChange={(e) => setNewPersonaName(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 text-sm focus:outline-none focus:border-purple-500"
+                        />
+                        <textarea 
+                          placeholder="Instructions (e.g. 'Keep it Gen-Z, use lots of slang, focus on high energy hooks.')" 
+                          value={newPersonaDesc}
+                          onChange={(e) => setNewPersonaDesc(e.target.value)}
+                          rows={2}
+                          className="w-full px-3 py-2 rounded-lg bg-white dark:bg-black/40 border border-slate-200 dark:border-white/10 text-sm focus:outline-none focus:border-purple-500 resize-none"
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            if (newPersonaName && newPersonaDesc) {
+                              setPersonas([...personas, { name: newPersonaName, description: newPersonaDesc }]);
+                              setNewPersonaName('');
+                              setNewPersonaDesc('');
+                            }
+                          }}
+                          className="text-xs font-semibold px-4 py-1.5 rounded-lg bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 transition-colors"
+                        >
+                          + Add Persona
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
               </motion.div>
             )}
 

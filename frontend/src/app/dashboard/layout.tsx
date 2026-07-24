@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Plus, History, Settings, Sparkles, Menu, X, LogOut, User as UserIcon, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Plus, History, Settings, Sparkles, Menu, X, LogOut, User as UserIcon, ChevronRight, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
@@ -81,6 +81,7 @@ export default function DashboardLayout({
     { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     { name: 'New Project', href: '/dashboard/new', icon: Plus },
     { name: 'History', href: '/dashboard/history', icon: History },
+    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
 
@@ -88,6 +89,7 @@ export default function DashboardLayout({
     if (pathname === '/dashboard') return 'Overview';
     if (pathname === '/dashboard/new') return 'New Project';
     if (pathname === '/dashboard/history') return 'History';
+    if (pathname === '/dashboard/analytics') return 'Creator Analytics';
     if (pathname === '/dashboard/settings') return 'Settings';
     if (pathname.startsWith('/dashboard/project/')) return 'Project Details';
     return 'Dashboard';
