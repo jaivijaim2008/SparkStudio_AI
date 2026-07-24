@@ -332,7 +332,9 @@ export default function LandingPage() {
               <h3 className="text-2xl font-bold font-outfit mb-1">{plan.name}</h3>
               <p className="text-muted-foreground text-sm mb-6">{plan.desc}</p>
               <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-4xl md:text-5xl font-outfit font-bold tracking-tight">{plan.price}</span>
+                <span className="text-4xl md:text-5xl font-outfit font-bold tracking-tight">
+                  {upiId ? (plan.name === 'Pro' ? '₹1,599' : plan.name === 'Team' ? '₹3,999' : '₹0') : plan.price}
+                </span>
                 <span className="text-muted-foreground text-sm font-medium">{plan.period}</span>
               </div>
               <ul className="space-y-3.5 mb-8">

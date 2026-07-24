@@ -342,7 +342,12 @@ export default function SettingsPage() {
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                 <div>
                   <h3 className="text-lg font-bold font-outfit">Payment Links</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Configure your real Stripe Payment Links, PayPal.me, or Buy Me a Coffee URLs to receive pricing plan checkout funds directly.</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Configure your Stripe checkout URLs or UPI ID to receive pricing plan checkout funds directly.
+                    <strong className="text-purple-500 dark:text-purple-400 block mt-1">
+                      💡 Indian Users: If you only want UPI payments, you can leave the Stripe links blank. Setting your UPI ID will automatically switch the landing page pricing cards to display Indian Rupees (₹) instead of USD ($).
+                    </strong>
+                  </p>
                 </div>
                 
                 <div className="space-y-4 max-w-md">
