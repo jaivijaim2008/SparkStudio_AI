@@ -17,6 +17,21 @@ export default function LandingPage() {
   const [selectedPlanName, setSelectedPlanName] = useState('');
   const [selectedPlanPrice, setSelectedPlanPrice] = useState(0);
 
+  const [claimEmail, setClaimEmail] = useState('');
+  const [utrNumber, setUtrNumber] = useState('');
+  const [claiming, setClaiming] = useState(false);
+  const [claimSuccess, setClaimSuccess] = useState(false);
+
+  useEffect(() => {
+    if (upiModalOpen) {
+      setClaimSuccess(false);
+      setUtrNumber('');
+      if (sessionUser?.email) {
+        setClaimEmail(sessionUser.email);
+      }
+    }
+  }, [upiModalOpen, sessionUser]);
+
   useEffect(() => {
     const supabase = createClient();
     if (!supabase) return;
@@ -66,6 +81,41 @@ export default function LandingPage() {
       const inrAmount = usdAmount === 19 ? 59 : 99;
       setSelectedPlanPrice(inrAmount);
       setUpiModalOpen(true);
+    }
+  };
+
+  const handleClaimUpgrade = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!claimEmail || !claimEmail.trim()) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    if (!utrNumber || !utrNumber.trim() || utrNumber.trim().length !== 12 || !/^\d+$/.test(utrNumber.trim())) {
+      toast.error('Please enter a valid 12-digit numeric UPI Transaction ID (UTR)');
+      return;
+    }
+
+    setClaiming(true);
+    try {
+      const response = await fetch(apiUrl('/api/payments/claim'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: sessionUser?.id || 'guest',
+          email: claimEmail.trim(),
+          plan_name: selectedPlanName,
+          utr_number: utrNumber.trim()
+        })
+      });
+
+      if (!response.ok) throw new Error('Claim submission failed');
+
+      setClaimSuccess(true);
+      toast.success('Upgrade claim submitted successfully!');
+    } catch (err) {
+      toast.error('Failed to submit claim. Please check your connection.');
+    } finally {
+      setClaiming(false);
     }
   };
 
@@ -471,6 +521,66 @@ export default function LandingPage() {
                   Pay via UPI App
                 </a>
               </div>
+
+              {claimSuccess ? (
+                <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/30 text-green-400 text-xs text-center space-y-1 mt-4">
+                  <p className="font-bold flex items-center justify-center gap-1">
+                    <Check className="w-4 h-4" /> Claim Submitted!
+                  </p>
+                  <p className="text-[10px] opacity-80 leading-relaxed">
+                    The admin will verify your UTR and activate your {selectedPlanName} plan within 10-15 minutes.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleClaimUpgrade} className="border-t border-slate-200 dark:border-white/10 pt-4 mt-4 space-y-3 text-left">
+                  <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider block">
+                    Verify Payment to Activate Plan
+                  </span>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-muted-foreground font-semibold block">Your Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      value={claimEmail}
+                      onChange={(e) => setClaimEmail(e.target.value)}
+                      placeholder="e.g. yourname@gmail.com"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white focus:border-purple-500 outline-none transition-colors"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-muted-foreground font-semibold block">12-Digit UPI Transaction ID (UTR)</label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={12}
+                      value={utrNumber}
+                      onChange={(e) => setUtrNumber(e.target.value.replace(/\D/g, ''))}
+                      placeholder="e.g. 320958471203"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white focus:border-purple-500 outline-none transition-colors font-mono"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={claiming}
+                    className="w-full text-center py-2.5 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-xs font-bold text-white transition-all shadow-md shadow-purple-500/10 flex items-center justify-center gap-1.5"
+                  >
+                    {claiming ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Submitting Claim...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        Claim Upgrade
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
             </div>
           </motion.div>
         </div>

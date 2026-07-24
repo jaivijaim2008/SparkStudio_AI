@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiUrl } from '@/lib/api';
+import { createClient } from '@/lib/supabase';
 
 const YoutubeIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -314,9 +315,63 @@ export default function NewProject() {
     setIsGenerating(true);
     
     try {
+      const supabase = createClient();
+      if (!supabase) throw new Error('Supabase client not initialized');
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !session.user) {
+        toast.error("Please log in to generate projects");
+        setIsGenerating(false);
+        return;
+      }
+
+      // Fetch user profile plan details
+      const { data: profile, error: profileErr } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileErr || !profile) {
+        console.error("Profile fetch error:", profileErr);
+      } else {
+        const isFree = !profile.plan || profile.plan.toLowerCase() === 'free';
+        
+        if (isFree) {
+          // Count user's generated projects
+          const { count, error: countErr } = await supabase
+            .from('projects')
+            .select('*', { count: 'exact', head: true })
+            .eq('input->>user_email', session.user.email);
+
+          if (countErr) {
+            console.error("Count error:", countErr);
+          } else {
+            const projectCount = count || 0;
+            const registrationDate = new Date(profile.created_at);
+            const now = new Date();
+            const diffHours = (now.getTime() - registrationDate.getTime()) / (1000 * 60 * 60);
+
+            if (projectCount >= 5) {
+              toast.error("Trial Limit Exceeded: You have generated 5 free projects. Please upgrade to Pro or Team to continue!");
+              setIsGenerating(false);
+              router.push('/#pricing');
+              return;
+            }
+
+            if (diffHours >= 24) {
+              toast.error("Trial Expired: Your 24-hour free trial has ended. Please upgrade to Pro or Team to continue!");
+              setIsGenerating(false);
+              router.push('/#pricing');
+              return;
+            }
+          }
+        }
+      }
+
       toast.success('Project created! Initializing AI agents...');
 
-      const userEmail = typeof window !== 'undefined' ? localStorage.getItem('sparkstudio-user-email') : null;
+      const userEmail = session.user.email;
 
       const response = await fetch(apiUrl('/api/projects'), {
         method: 'POST',

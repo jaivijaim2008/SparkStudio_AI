@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Plus, Video, TrendingUp, Clock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Video, TrendingUp, Clock, ArrowRight, Loader2, AlertCircle, Shield, Gem } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { createClient } from '@/lib/supabase';
 
 interface Project {
   id: string;
@@ -40,6 +41,51 @@ export default function DashboardOverview() {
       }
     };
     fetchProjects();
+  }, []);
+
+  const [profile, setProfile] = useState<any>(null);
+  const [projectCount, setProjectCount] = useState<number>(0);
+  const [hoursLeft, setHoursLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadProfileAndCount = async () => {
+      try {
+        const supabase = createClient();
+        if (!supabase) return;
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || !session.user) return;
+
+        // Fetch profile
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (prof) {
+          setProfile(prof);
+          
+          // Fetch exact project count
+          const { count } = await supabase
+            .from('projects')
+            .select('*', { count: 'exact', head: true })
+            .eq('input->>user_email', session.user.email);
+            
+          setProjectCount(count || 0);
+
+          // Calculate trial expiry hours (24 hours trial)
+          const regDate = new Date(prof.created_at);
+          const now = new Date();
+          const msLeft = (24 * 60 * 60 * 1000) - (now.getTime() - regDate.getTime());
+          const hrsLeft = Math.max(0, Math.floor(msLeft / (1000 * 60 * 60)));
+          setHoursLeft(hrsLeft);
+        }
+      } catch (e) {
+        console.error("Failed to load profile settings:", e);
+      }
+    };
+    loadProfileAndCount();
   }, []);
 
   // Real computed stats
@@ -96,7 +142,7 @@ export default function DashboardOverview() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }}
@@ -146,6 +192,71 @@ export default function DashboardOverview() {
               '0h'
             )}
           </span>
+        </motion.div>
+
+        {/* Account Plan Status Card */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className={`glass-card p-6 flex flex-col gap-3 relative overflow-hidden border ${
+            profile?.plan && profile.plan.toLowerCase() !== 'free'
+              ? 'border-purple-500/50 bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent'
+              : 'border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent'
+          }`}
+        >
+          {!profile ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {profile.plan?.toLowerCase() !== 'free' ? 'Subscription' : 'Free Trial'}
+                </span>
+                <div className={`p-2 rounded-lg ${
+                  profile.plan?.toLowerCase() !== 'free' ? 'bg-purple-500/10' : 'bg-amber-500/10'
+                }`}>
+                  {profile.plan?.toLowerCase() !== 'free' ? (
+                    <Gem className="w-4 h-4 text-purple-400" />
+                  ) : (
+                    <Shield className="w-4 h-4 text-amber-400" />
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <span className="text-2xl font-bold font-outfit block">
+                  {profile.plan?.toLowerCase() !== 'free' 
+                    ? `${profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1)} Plan`
+                    : `${Math.max(0, 5 - projectCount)} of 5 runs left`
+                  }
+                </span>
+                <span className="text-xs text-muted-foreground mt-1 block">
+                  {profile.plan?.toLowerCase() !== 'free' 
+                    ? 'Unlimited high-speed runs active'
+                    : hoursLeft !== null 
+                      ? hoursLeft <= 0 
+                        ? 'Trial expired (24h limit)' 
+                        : `Trial ends in ${hoursLeft}h`
+                      : '24h trial active'
+                  }
+                </span>
+              </div>
+
+              {profile.plan?.toLowerCase() === 'free' && (
+                <div className="pt-1 mt-auto">
+                  <Link 
+                    href="/#pricing" 
+                    className="inline-flex items-center gap-1 text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors"
+                  >
+                    Upgrade Plan <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
         </motion.div>
       </div>
 

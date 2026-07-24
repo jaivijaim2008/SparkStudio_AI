@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sliders, Bell, Palette, Download, HelpCircle, Save, Sun, Moon, Check, CreditCard } from 'lucide-react';
+import { Sliders, Bell, Palette, Download, HelpCircle, Save, Sun, Moon, Check, CreditCard, Shield, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/providers/theme-provider';
 import { apiUrl } from '@/lib/api';
+import { createClient } from '@/lib/supabase';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
@@ -23,6 +24,79 @@ export default function SettingsPage() {
   const [stripeProLink, setStripeProLink] = useState('https://buy.stripe.com/your-mock-pro-link');
   const [stripeTeamLink, setStripeTeamLink] = useState('https://buy.stripe.com/your-mock-team-link');
   const [upiId, setUpiId] = useState('');
+
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [claims, setClaims] = useState<any[]>([]);
+  const [loadingClaims, setLoadingClaims] = useState(false);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+      if (!supabase) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        setCurrentUserEmail(session.user.email);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const isAdmin = currentUserEmail === 'jaivijaim2008@gmail.com';
+
+  const fetchClaims = async () => {
+    setLoadingClaims(true);
+    try {
+      const res = await fetch(apiUrl('/api/payments/claims'));
+      if (res.ok) {
+        const data = await res.json();
+        setClaims(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch claims:", e);
+    } finally {
+      setLoadingClaims(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'claims' && isAdmin) {
+      fetchClaims();
+    }
+  }, [activeTab, isAdmin]);
+
+  const handleApproveClaim = async (claimId: string, userId: string, planName: string) => {
+    try {
+      const res = await fetch(apiUrl('/api/payments/claims/approve'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claim_id: claimId, user_id: userId, plan_name: planName })
+      });
+      if (res.ok) {
+        toast.success("Payment claim approved and plan upgraded!");
+        fetchClaims();
+      } else {
+        throw new Error();
+      }
+    } catch (e) {
+      toast.error("Failed to approve claim.");
+    }
+  };
+
+  const handleRejectClaim = async (claimId: string) => {
+    try {
+      const res = await fetch(apiUrl(`/api/payments/claims/reject?claim_id=${claimId}`), {
+        method: 'POST'
+      });
+      if (res.ok) {
+        toast.success("Payment claim rejected.");
+        fetchClaims();
+      } else {
+        throw new Error();
+      }
+    } catch (e) {
+      toast.error("Failed to reject claim.");
+    }
+  };
 
   // Sync initial state from localStorage and Theme context on mount
   useEffect(() => {
@@ -102,6 +176,7 @@ export default function SettingsPage() {
     { id: 'export', label: 'Export Defaults', icon: Download },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'payments', label: 'Payment Links', icon: CreditCard },
+    ...(isAdmin ? [{ id: 'claims', label: 'Admin Claims', icon: Shield }] : []),
     { id: 'help', label: 'Help & Docs', icon: HelpCircle },
   ];
 
@@ -388,6 +463,101 @@ export default function SettingsPage() {
               </motion.div>
             )}
 
+            {activeTab === 'claims' && isAdmin && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-bold font-outfit">UPI Payment Claims</h3>
+                  <p className="text-xs text-muted-foreground mt-1 font-medium">Review UTR payment claims submitted by users. Verify UTR numbers against your UPI/bank statement before approving.</p>
+                </div>
+
+                <div className="space-y-4">
+                  {loadingClaims ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                    </div>
+                  ) : claims.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground border border-slate-200 dark:border-white/10 rounded-2xl bg-slate-50 dark:bg-black/20">
+                      <Clock className="w-8 h-8 mx-auto mb-2 text-slate-400 dark:text-white/20 animate-pulse" />
+                      <p className="text-sm font-semibold">No payment claims found</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border border-slate-200 dark:border-white/15 rounded-xl bg-slate-50 dark:bg-black/30">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-200 dark:border-white/10 text-slate-600 dark:text-muted-foreground uppercase tracking-wider font-bold">
+                            <th className="py-3.5 px-5">User / Email</th>
+                            <th className="py-3.5 px-5">Requested Plan</th>
+                            <th className="py-3.5 px-5">UTR Number</th>
+                            <th className="py-3.5 px-5">Date</th>
+                            <th className="py-3.5 px-5">Status</th>
+                            <th className="py-3.5 px-5 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 dark:divide-white/5">
+                          {claims.map((claim) => (
+                            <tr key={claim.id} className="hover:bg-slate-100 dark:hover:bg-white/[0.02] transition-colors">
+                              <td className="py-4 px-5 font-semibold text-slate-900 dark:text-white">{claim.email}</td>
+                              <td className="py-4 px-5">
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                  claim.plan_name.toLowerCase() === 'team'
+                                    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                                    : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                                }`}>
+                                  {claim.plan_name}
+                                </span>
+                              </td>
+                              <td className="py-4 px-5">
+                                <span className="font-mono font-bold select-all bg-slate-200 dark:bg-white/5 px-2.5 py-1 rounded-md text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-white/5 font-semibold">
+                                  {claim.utr_number}
+                                </span>
+                              </td>
+                              <td className="py-4 px-5 text-slate-500 dark:text-muted-foreground">
+                                {new Date(claim.created_at).toLocaleDateString()}
+                              </td>
+                              <td className="py-4 px-5">
+                                <span className={`flex items-center gap-1 font-semibold ${
+                                  claim.status === 'approved'
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : claim.status === 'rejected'
+                                      ? 'text-red-600 dark:text-red-400'
+                                      : 'text-amber-600 dark:text-amber-400'
+                                }`}>
+                                  {claim.status === 'approved' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                  {claim.status === 'rejected' && <XCircle className="w-3.5 h-3.5" />}
+                                  {claim.status === 'pending' && <Clock className="w-3.5 h-3.5 animate-pulse" />}
+                                  {claim.status.charAt(0).toUpperCase() + claim.status.slice(1)}
+                                </span>
+                              </td>
+                              <td className="py-4 px-5 text-right">
+                                {claim.status === 'pending' && (
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRejectClaim(claim.id)}
+                                      className="px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/25 transition-colors font-bold text-[10px]"
+                                    >
+                                      Reject
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleApproveClaim(claim.id, claim.user_id, claim.plan_name)}
+                                      className="px-2.5 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/25 transition-colors font-bold text-[10px]"
+                                    >
+                                      Approve
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
             {activeTab === 'help' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                 <h3 className="text-lg font-bold font-outfit">Documentation & Help</h3>
@@ -405,7 +575,7 @@ export default function SettingsPage() {
             )}
 
             {/* Save Button */}
-            {activeTab !== 'help' && (
+            {activeTab !== 'help' && activeTab !== 'claims' && (
               <div className="pt-6 mt-6 border-t border-slate-200 dark:border-white/10 flex justify-end">
                 <button
                   type="submit"

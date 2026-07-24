@@ -482,6 +482,19 @@ async def health_check():
         "llm_provider": settings.LLM_PROVIDER
     }
 
+class PaymentClaimInput(BaseModel):
+    user_id: str
+    email: str
+    plan_name: str
+    utr_number: str
+
+class ApproveClaimInput(BaseModel):
+    claim_id: str
+    user_id: str
+    plan_name: str
+
+payment_claims_db = []
+
 @router.get("/payments/config")
 async def get_payments_config():
     import os
@@ -490,3 +503,74 @@ async def get_payments_config():
         "stripe_team_link": os.environ.get("STRIPE_TEAM_LINK", "https://buy.stripe.com/your-mock-team-link"),
         "upi_id": os.environ.get("UPI_ID", "")
     }
+
+@router.post("/payments/claim")
+async def create_payment_claim(claim: PaymentClaimInput):
+    import uuid
+    from datetime import datetime
+    claim_id = str(uuid.uuid4())
+    claim_data = {
+        "id": claim_id,
+        "user_id": claim.user_id,
+        "email": claim.email,
+        "plan_name": claim.plan_name,
+        "utr_number": claim.utr_number,
+        "status": "pending",
+        "created_at": datetime.utcnow().isoformat()
+    }
+    payment_claims_db.append(claim_data)
+    
+    if supabase:
+        try:
+            supabase.table("payment_claims").insert(claim_data).execute()
+        except Exception as e:
+            logger.warning(f"Could not save payment claim to Supabase, falling back to local memory: {e}")
+            
+    return {"status": "success", "claim_id": claim_id}
+
+@router.get("/payments/claims")
+async def get_payment_claims():
+    if supabase:
+        try:
+            res = supabase.table("payment_claims").select("*").execute()
+            claims = res.data
+            return sorted(claims, key=lambda x: x["created_at"], reverse=True)
+        except Exception as e:
+            logger.warning(f"Could not load payment claims from Supabase: {e}")
+    
+    return sorted(payment_claims_db, key=lambda x: x["created_at"], reverse=True)
+
+@router.post("/payments/claims/approve")
+async def approve_payment_claim(input_data: ApproveClaimInput):
+    # Update status in memory
+    for claim in payment_claims_db:
+        if claim["id"] == input_data.claim_id:
+            claim["status"] = "approved"
+            
+    if supabase:
+        try:
+            supabase.table("payment_claims").update({"status": "approved"}).eq("id", input_data.claim_id).execute()
+            # Upgrade user plan: standard plans are 'free', 'pro', 'enterprise'
+            db_plan = "pro" if "pro" in input_data.plan_name.lower() else "enterprise"
+            supabase.table("profiles").update({"plan": db_plan}).eq("id", input_data.user_id).execute()
+        except Exception as e:
+            logger.error(f"Failed to update profile plan in Supabase: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+            
+    return {"status": "success"}
+
+@router.post("/payments/claims/reject")
+async def reject_payment_claim(claim_id: str):
+    # Update status in memory
+    for claim in payment_claims_db:
+        if claim["id"] == claim_id:
+            claim["status"] = "rejected"
+            
+    if supabase:
+        try:
+            supabase.table("payment_claims").update({"status": "rejected"}).eq("id", claim_id).execute()
+        except Exception as e:
+            logger.error(f"Failed to reject claim: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+            
+    return {"status": "success"}
