@@ -63,7 +63,7 @@ export default function LandingPage() {
       e.preventDefault();
       setSelectedPlanName(plan.name);
       const usdAmount = parseInt(plan.price.replace('$', '')) || 0;
-      const inrAmount = usdAmount === 19 ? 1599 : 3999;
+      const inrAmount = usdAmount === 19 ? 59 : 99;
       setSelectedPlanPrice(inrAmount);
       setUpiModalOpen(true);
     }
@@ -334,7 +334,7 @@ export default function LandingPage() {
               <p className="text-muted-foreground text-sm mb-6">{plan.desc}</p>
               <div className="flex items-baseline gap-1 mb-6">
                 <span className="text-4xl md:text-5xl font-outfit font-bold tracking-tight">
-                  {upiId ? (plan.name === 'Pro' ? '₹1,599' : plan.name === 'Team' ? '₹3,999' : '₹0') : plan.price}
+                  {upiId ? (plan.name === 'Pro' ? '₹59' : plan.name === 'Team' ? '₹99' : '₹0') : plan.price}
                 </span>
                 <span className="text-muted-foreground text-sm font-medium">{plan.period}</span>
               </div>
