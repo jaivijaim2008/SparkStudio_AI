@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sliders, Bell, Palette, Download, HelpCircle, Save, Sun, Moon, Check, CreditCard, Shield, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Sliders, Bell, Palette, Download, HelpCircle, Save, Sun, Moon, Check, CreditCard, Shield, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/providers/theme-provider';
 import { apiUrl } from '@/lib/api';
