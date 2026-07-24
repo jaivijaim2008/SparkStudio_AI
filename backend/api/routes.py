@@ -647,32 +647,44 @@ async def verify_razorpay_payment(body: RazorpayVerifyInput):
     Verify Razorpay payment signature and instantly upgrade user plan.
     Called from frontend after successful payment callback.
     """
-    import os, hmac, hashlib
+    import os
+    import hmac as hmac_module
+    import hashlib
     key_secret = os.environ.get("RAZORPAY_KEY_SECRET", "")
     if not key_secret:
         raise HTTPException(status_code=503, detail="Razorpay not configured.")
 
     # Verify HMAC signature to confirm payment is genuine
-    expected = hmac.new(
+    message = f"{body.razorpay_order_id}|{body.razorpay_payment_id}".encode("utf-8")
+    expected = hmac_module.new(
         key_secret.encode("utf-8"),
-        f"{body.razorpay_order_id}|{body.razorpay_payment_id}".encode("utf-8"),
+        message,
         hashlib.sha256
     ).hexdigest()
 
-    if not hmac.compare_digest(expected, body.razorpay_signature):
-        raise HTTPException(status_code=400, detail="Invalid payment signature. Payment could not be verified.")
+    if not hmac_module.compare_digest(expected, body.razorpay_signature):
+        logger.error(f"Signature mismatch. Expected={expected[:16]}... Got={body.razorpay_signature[:16]}...")
+        raise HTTPException(status_code=400, detail="Invalid payment signature.")
 
     # Signature valid — upgrade the user plan
     db_plan = "enterprise" if body.plan_name.lower() in ("team", "enterprise") else "pro"
     if supabase:
         try:
-            supabase.table("profiles").update({"plan": db_plan}).eq("id", body.user_id).execute()
-            logger.info(f"Auto-upgraded user {body.user_id} to plan '{db_plan}' after Razorpay payment {body.razorpay_payment_id}")
+            # Try by user_id first
+            res = supabase.table("profiles").update({"plan": db_plan}).eq("id", body.user_id).execute()
+            rows_updated = len(res.data) if res.data else 0
+            # Fallback: try by email if user_id did not match any row
+            if rows_updated == 0 and body.email:
+                res2 = supabase.table("profiles").update({"plan": db_plan}).eq("email", body.email).execute()
+                rows_updated = len(res2.data) if res2.data else 0
+                logger.info(f"Plan upgrade by email fallback: {body.email} -> {db_plan}, rows={rows_updated}")
+            else:
+                logger.info(f"Auto-upgraded user {body.user_id} to '{db_plan}' after payment {body.razorpay_payment_id}, rows={rows_updated}")
         except Exception as e:
             logger.error(f"Failed to upgrade plan after verified payment: {e}")
-            raise HTTPException(status_code=500, detail="Payment verified but plan upgrade failed. Contact support.")
+            raise HTTPException(status_code=500, detail=f"Payment verified but plan upgrade failed: {str(e)}")
     else:
-        logger.warning("Supabase not initialized — plan upgrade skipped (demo mode).")
+        logger.warning("Supabase not initialized — plan upgrade skipped.")
 
     return {"status": "success", "plan": db_plan, "payment_id": body.razorpay_payment_id}
 
