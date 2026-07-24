@@ -175,7 +175,7 @@ export default function SettingsPage() {
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'export', label: 'Export Defaults', icon: Download },
     { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'payments', label: 'Payment Links', icon: CreditCard },
+    ...(isAdmin ? [{ id: 'payments', label: 'Payment Links', icon: CreditCard }] : []),
     ...(isAdmin ? [{ id: 'claims', label: 'Admin Claims', icon: Shield }] : []),
     { id: 'help', label: 'Help & Docs', icon: HelpCircle },
   ];
