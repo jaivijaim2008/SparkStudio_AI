@@ -375,13 +375,15 @@ class ExportService:
         
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
             # Add Script
-            if "script" in project_data:
-                zip_file.writestr("script.txt", project_data["script"].get("full_script", ""))
+            script_data = project_data.get("script") or {}
+            if script_data:
+                zip_file.writestr("script.txt", script_data.get("full_script", ""))
                 
             # Add Subtitles
-            if "subtitles" in project_data:
-                zip_file.writestr("captions.srt", project_data["subtitles"].get("srt_content", ""))
-                zip_file.writestr("captions.vtt", project_data["subtitles"].get("vtt_content", ""))
+            subtitles_data = project_data.get("subtitles") or {}
+            if subtitles_data:
+                zip_file.writestr("captions.srt", subtitles_data.get("srt_content", ""))
+                zip_file.writestr("captions.vtt", subtitles_data.get("vtt_content", ""))
                 
             # Add PDF Report
             pdf_bytes = ExportService.generate_pdf_report(project_data)
