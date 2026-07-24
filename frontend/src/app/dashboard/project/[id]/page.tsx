@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, CheckCircle2, Loader2, Play, Image as ImageIcon, FileText, Search, Type, Mic, ShieldCheck, DownloadCloud, AlertCircle, Clock } from 'lucide-react';
+import { Download, CheckCircle2, Loader2, Play, Image as ImageIcon, FileText, Search, Type, Mic, ShieldCheck, DownloadCloud, AlertCircle, Clock, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { apiUrl } from '@/lib/api';
 import { StoryboardImage } from '@/components/storyboard-image';
+import { createClient } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 export default function ProjectResultPage() {
   const params = useParams();
@@ -14,6 +16,7 @@ export default function ProjectResultPage() {
   const [status, setStatus] = useState('generating');
   const [activeTab, setActiveTab] = useState('pipeline');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [userPlan, setUserPlan] = useState('free');
   const startTimeRef = useRef(Date.now());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -127,6 +130,25 @@ export default function ProjectResultPage() {
     return () => eventSource.close();
   }, [projectId]);
 
+  useEffect(() => {
+    const fetchPlan = async () => {
+      const supabase = createClient();
+      if (!supabase) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        let prof: any = null;
+        const { data: profById } = await supabase.from('profiles').select('plan').eq('id', session.user.id).maybeSingle();
+        if (profById) prof = profById;
+        else {
+          const { data: profByEmail } = await supabase.from('profiles').select('plan').eq('email', session.user.email).maybeSingle();
+          if (profByEmail) prof = profByEmail;
+        }
+        if (prof?.plan) setUserPlan(prof.plan);
+      }
+    };
+    fetchPlan();
+  }, []);
+
   const tabs = [
     { id: 'pipeline', label: 'Pipeline Status' },
     { id: 'script', label: 'Script' },
@@ -157,35 +179,67 @@ export default function ProjectResultPage() {
     document.body.removeChild(link);
   };
 
+  const handleMarkdownExport = () => {
+    if (userPlan === 'free') {
+      toast.error('Markdown export is a Team plan feature.');
+      return;
+    }
+    const mdContent = `# ${getSeoTitle()}\n\n## Description\n${getSeoDescription()}\n\n## Tags\n${getSeoTags().join(', ')}\n\n## Script\n${getScript()}`;
+    const blob = new Blob([mdContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `sparkstudio_${projectId}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold font-outfit">Project Results</h1>
-            {status === 'generating' ? (
-              <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-medium flex items-center gap-2 border border-blue-500/20">
-                <Loader2 className="w-3 h-3 animate-spin" /> Generating
-              </span>
-            ) : (
-              <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-medium flex items-center gap-2 border border-green-500/20">
-                <CheckCircle2 className="w-3 h-3" /> Completed
-              </span>
+          <h2 className="text-3xl font-outfit font-bold flex items-center gap-3">
+            Project <span className="text-purple-400 font-mono text-xl bg-purple-500/10 px-3 py-1 rounded-lg">#{projectId.slice(0,6)}</span>
+            {status === 'completed' && (
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center gap-1.5 text-sm font-medium bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/30">
+                <CheckCircle2 className="w-4 h-4" /> Ready
+              </motion.div>
+            )}
+          </h2>
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <p className="text-muted-foreground text-sm flex items-center gap-2">
+              {status === 'generating' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                  Generating your content... ({elapsedSeconds}s)
+                </>
+              ) : 'Generation complete.'}
+            </p>
+            
+            {/* Simulated Priority Queue Badge */}
+            {status === 'generating' && (userPlan === 'pro' || userPlan === 'team') && (
+              <div className="flex items-center gap-1 text-xs font-bold bg-amber-500/20 text-amber-500 px-2 py-1 rounded border border-amber-500/30">
+                <Zap className="w-3 h-3" /> Priority Queue Active
+              </div>
             )}
           </div>
-          <p className="text-muted-foreground text-sm">Project ID: {projectId?.slice(0, 8)}...</p>
         </div>
-
-        {status === 'completed' && (
-          <button 
-            onClick={handleDownload}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Download Package (.zip)
-          </button>
-        )}
+        
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {status === 'completed' && (
+            <div className="mt-8 flex flex-wrap gap-4">
+              <button onClick={handleDownload} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-purple-500/25 border border-purple-500/50">
+                <Download className="w-5 h-5" /> Download ZIP
+              </button>
+              <button onClick={handleMarkdownExport} className={`flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all border border-white/10 ${userPlan === 'free' ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <FileText className="w-5 h-5" /> Export Markdown {userPlan === 'free' ? '🔒 (Team)' : ''}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}

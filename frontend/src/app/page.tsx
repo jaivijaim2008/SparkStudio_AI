@@ -493,7 +493,7 @@ export default function LandingPage() {
               price: '$49',
               period: '/month',
               desc: 'For agencies & teams',
-              features: ['Everything in Pro', '5 team members', 'Shared workspace', 'Analytics dashboard', 'Dedicated support'],
+              features: ['Everything in Pro', 'Advanced Creator Analytics', 'Multiple Brand Personas', 'PDF & Markdown Exports', 'Priority Generation Queue'],
               cta: 'Contact Sales',
               featured: false,
             },
