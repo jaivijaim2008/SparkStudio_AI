@@ -205,13 +205,15 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-outfit font-bold tracking-tight mb-6 leading-[1.15]"
+          className="text-5xl md:text-7xl font-outfit font-extrabold tracking-tight mb-6 leading-[1.15] flex flex-col items-center gap-2"
         >
-          <span className="text-slate-900 dark:text-white">One Prompt.</span> <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#d8b4fe] via-[#a855f7] to-[#818cf8]">
+          <span className="text-slate-900 dark:text-white">
+            One Prompt.
+          </span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-violet-400 to-indigo-400">
             Complete Content
-          </span> <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#38bdf8] via-[#00f2fe] to-[#06b6d4]">
+          </span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-cyan-400 to-teal-300">
             Production.
           </span>
         </motion.h1>
