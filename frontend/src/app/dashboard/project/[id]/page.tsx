@@ -32,16 +32,41 @@ export default function ProjectResultPage() {
   const [projectData, setProjectData] = useState<any>({});
   const [imageStatuses, setImageStatuses] = useState<string[]>([]);
 
-  // Initialize image load status array when storyboard scenes load to trigger parallel loading
+  // Initialize image load status array when storyboard scenes load
   useEffect(() => {
     if (projectData?.storyboard?.scenes) {
       const len = projectData.storyboard.scenes.length;
       setImageStatuses(prev => {
         if (prev.length === len) return prev;
-        return new Array(len).fill('loading');
+        return new Array(len).fill('pending');
       });
     }
   }, [projectData]);
+
+  const scheduledIndexRef = useRef<number | null>(null);
+
+  // Queue coordinator: stagger image requests by 200ms to prevent Pollinations rate limiting
+  useEffect(() => {
+    if (imageStatuses.length === 0) return;
+    
+    const nextIdx = imageStatuses.findIndex(s => s === 'pending');
+    if (nextIdx !== -1 && scheduledIndexRef.current !== nextIdx) {
+      scheduledIndexRef.current = nextIdx;
+      const timer = setTimeout(() => {
+        setImageStatuses(prev => {
+          const next = [...prev];
+          next[nextIdx] = 'loading';
+          return next;
+        });
+        scheduledIndexRef.current = null;
+      }, 200); // 200ms spacing between triggers
+      
+      return () => {
+        clearTimeout(timer);
+        scheduledIndexRef.current = null;
+      };
+    }
+  }, [imageStatuses]);
 
   // Elapsed timer
   useEffect(() => {

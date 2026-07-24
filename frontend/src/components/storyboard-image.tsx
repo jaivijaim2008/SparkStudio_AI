@@ -26,6 +26,7 @@ export function StoryboardImage({
   const [src, setSrc] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Set early error state if prompt is completely missing
   useEffect(() => {
@@ -36,7 +37,7 @@ export function StoryboardImage({
     }
   }, [prompt]);
 
-  // Re-generate URL when prompt or shouldLoad changes
+  // Re-generate URL when prompt, retryCount, or shouldLoad changes
   useEffect(() => {
     if (!shouldLoad || !prompt) return;
 
@@ -51,11 +52,12 @@ export function StoryboardImage({
       .trim();
 
     const encodedPrompt = encodeURIComponent(sanitizedPrompt.substring(0, 450));
-    const seed = (sceneNumber * 1337);
-    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=turbo&seed=${seed}`;
+    const seed = (sceneNumber * 1337) + (retryCount * 42);
+    const cacheBuster = retryCount > 0 ? `&r=${retryCount}` : '';
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=turbo&seed=${seed}${cacheBuster}`;
     
     setSrc(url);
-  }, [prompt, sceneNumber, shouldLoad]);
+  }, [prompt, sceneNumber, retryCount, shouldLoad]);
 
   const handleLoad = () => {
     setLoading(false);
@@ -64,15 +66,23 @@ export function StoryboardImage({
   };
 
   const handleError = () => {
-    setLoading(false);
-    setError(true);
-    onLoadError();
+    if (retryCount < 5) {
+      // Silent background retry after 1.5 seconds to bypass rate limits
+      setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 1500);
+    } else {
+      setLoading(false);
+      setError(true);
+      onLoadError();
+    }
   };
 
   const handleManualRetry = (e: React.MouseEvent) => {
     e.stopPropagation();
     setError(false);
     setLoading(true);
+    setRetryCount(0);
   };
 
   // The fallback is a premium abstract CSS gradient representing a digital scene
@@ -111,7 +121,7 @@ export function StoryboardImage({
                 <>
                   <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
                   <span className="text-[9px] text-white/40 font-medium animate-pulse">
-                    Generating visual...
+                    {retryCount > 0 ? `Generating visual (attempt ${retryCount + 1}/6)...` : 'Generating visual...'}
                   </span>
                 </>
               )}
