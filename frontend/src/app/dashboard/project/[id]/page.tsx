@@ -176,8 +176,8 @@ export default function ProjectResultPage() {
       return;
     }
     const link = document.createElement('a');
-    link.href = apiUrl(`/api/project/${projectId}/export`);
-    link.download = `sparkstudio_${projectId}.pdf`;
+    link.href = apiUrl(`/api/project/${projectId}/export?format=zip`);
+    link.download = `sparkstudio_${projectId}.zip`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
