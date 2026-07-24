@@ -16,6 +16,9 @@ export default function LandingPage() {
   const [upiModalOpen, setUpiModalOpen] = useState(false);
   const [selectedPlanName, setSelectedPlanName] = useState('');
   const [selectedPlanPrice, setSelectedPlanPrice] = useState(0);
+  const [razorpayKeyId, setRazorpayKeyId] = useState('');
+  const [razorpayEnabled, setRazorpayEnabled] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
 
   const [claimEmail, setClaimEmail] = useState('');
   const [utrNumber, setUtrNumber] = useState('');
@@ -44,41 +47,132 @@ export default function LandingPage() {
       setSessionUser(session?.user ?? null);
     });
 
-    // Load custom payment links from backend with local overrides
+    // Load custom payment links and Razorpay config from backend
     fetch(apiUrl('/api/payments/config'))
       .then(res => res.ok ? res.json() : Promise.reject())
       .then(data => {
         const savedPro = localStorage.getItem('sparkstudio-stripe-pro') || data.stripe_pro_link;
         if (savedPro) setProPaymentLink(savedPro);
-        
         const savedTeam = localStorage.getItem('sparkstudio-stripe-team') || data.stripe_team_link;
         if (savedTeam) setTeamPaymentLink(savedTeam);
-        
         const savedUpi = localStorage.getItem('sparkstudio-upi-id') || data.upi_id;
         if (savedUpi) setUpiId(savedUpi);
       })
       .catch(() => {
         const savedPro = localStorage.getItem('sparkstudio-stripe-pro');
         if (savedPro) setProPaymentLink(savedPro);
-        
         const savedTeam = localStorage.getItem('sparkstudio-stripe-team');
         if (savedTeam) setTeamPaymentLink(savedTeam);
-        
         const savedUpi = localStorage.getItem('sparkstudio-upi-id');
         if (savedUpi) setUpiId(savedUpi);
       });
 
+    // Load Razorpay config
+    fetch(apiUrl('/api/payments/razorpay/config'))
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(data => {
+        if (data.enabled && data.key_id) {
+          setRazorpayKeyId(data.key_id);
+          setRazorpayEnabled(true);
+          // Preload Razorpay checkout script
+          if (!document.getElementById('razorpay-script')) {
+            const script = document.createElement('script');
+            script.id = 'razorpay-script';
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.async = true;
+            document.body.appendChild(script);
+          }
+        }
+      })
+      .catch(() => {});
+
     return () => subscription.unsubscribe();
   }, []);
 
-  const handlePlanClick = (e: React.MouseEvent, plan: any) => {
+  const handlePlanClick = async (e: React.MouseEvent, plan: any) => {
     if (plan.name === 'Free') return;
+    e.preventDefault();
 
+    const planKey = plan.name.toLowerCase() === 'team' ? 'team' : 'pro';
+    const inrAmount = planKey === 'team' ? 99 : 59;
+
+    // If Razorpay is configured, use it for instant auto-activation
+    if (razorpayEnabled && razorpayKeyId && sessionUser) {
+      setPaymentProcessing(true);
+      try {
+        const orderRes = await fetch(apiUrl('/api/payments/razorpay/create-order'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plan_name: planKey,
+            user_id: sessionUser.id,
+            email: sessionUser.email
+          })
+        });
+        if (!orderRes.ok) throw new Error('Order creation failed');
+        const order = await orderRes.json();
+
+        const options = {
+          key: razorpayKeyId,
+          amount: order.amount,
+          currency: 'INR',
+          name: 'SparkStudio AI',
+          description: `${plan.name} Plan — ₹${inrAmount}/month`,
+          order_id: order.order_id,
+          prefill: {
+            email: sessionUser.email,
+            name: sessionUser.user_metadata?.full_name || ''
+          },
+          theme: { color: '#7c3aed' },
+          handler: async (response: any) => {
+            // Verify payment server-side and auto-upgrade plan
+            try {
+              const verifyRes = await fetch(apiUrl('/api/payments/razorpay/verify'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  user_id: sessionUser.id,
+                  plan_name: planKey
+                })
+              });
+              if (verifyRes.ok) {
+                toast.success(`🎉 ${plan.name} Plan activated! Enjoy unlimited access.`, { duration: 6000 });
+              } else {
+                toast.error('Payment received but activation failed. Contact support.');
+              }
+            } catch {
+              toast.error('Could not verify payment. Please contact support.');
+            }
+          },
+          modal: { ondismiss: () => setPaymentProcessing(false) }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } catch (err) {
+        toast.error('Could not start payment. Falling back to UPI QR...');
+        // Fallback to UPI QR modal
+        setSelectedPlanName(plan.name);
+        setSelectedPlanPrice(inrAmount);
+        setUpiModalOpen(true);
+      } finally {
+        setPaymentProcessing(false);
+      }
+      return;
+    }
+
+    // If not logged in but Razorpay is enabled, prompt login first
+    if (razorpayEnabled && !sessionUser) {
+      toast.error('Please sign in first to upgrade your plan.');
+      return;
+    }
+
+    // Fallback: UPI QR code modal (with manual UTR claim)
     if (upiId) {
-      e.preventDefault();
       setSelectedPlanName(plan.name);
-      const usdAmount = parseInt(plan.price.replace('$', '')) || 0;
-      const inrAmount = usdAmount === 19 ? 59 : 99;
       setSelectedPlanPrice(inrAmount);
       setUpiModalOpen(true);
     }
@@ -109,9 +203,8 @@ export default function LandingPage() {
       });
 
       if (!response.ok) throw new Error('Claim submission failed');
-
       setClaimSuccess(true);
-      toast.success('Upgrade claim submitted successfully!');
+      toast.success('Upgrade claim submitted! We will activate your plan shortly.');
     } catch (err) {
       toast.error('Failed to submit claim. Please check your connection.');
     } finally {

@@ -574,3 +574,139 @@ async def reject_payment_claim(claim_id: str):
             raise HTTPException(status_code=500, detail=str(e))
             
     return {"status": "success"}
+
+# ─────────────────────────────────────────────────────────────────
+# RAZORPAY AUTO-PAYMENT ENDPOINTS
+# ─────────────────────────────────────────────────────────────────
+
+class RazorpayOrderInput(BaseModel):
+    plan_name: str   # "pro" or "team"
+    user_id: str
+    email: str
+
+class RazorpayVerifyInput(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+    user_id: str
+    plan_name: str
+
+def _get_razorpay_client():
+    import os
+    import razorpay
+    key_id = os.environ.get("RAZORPAY_KEY_ID", "")
+    key_secret = os.environ.get("RAZORPAY_KEY_SECRET", "")
+    if not key_id or not key_secret:
+        return None, key_id
+    return razorpay.Client(auth=(key_id, key_secret)), key_id
+
+@router.get("/payments/razorpay/config")
+async def get_razorpay_config():
+    """Return Razorpay Key ID for frontend initialization."""
+    import os
+    key_id = os.environ.get("RAZORPAY_KEY_ID", "")
+    return {"key_id": key_id, "enabled": bool(key_id)}
+
+@router.post("/payments/razorpay/create-order")
+async def create_razorpay_order(body: RazorpayOrderInput):
+    """Create a Razorpay order for the selected plan."""
+    import os
+    plan_prices = {"pro": 5900, "team": 9900}  # Amount in paise (₹59 = 5900 paise)
+    plan_key = body.plan_name.lower().replace("enterprise", "team")
+    amount_paise = plan_prices.get(plan_key, 5900)
+
+    client, key_id = _get_razorpay_client()
+    if not client:
+        raise HTTPException(status_code=503, detail="Razorpay not configured. Please add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to your environment variables.")
+
+    try:
+        import uuid
+        order = client.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": f"sparkstudio_{body.user_id[:8]}_{str(uuid.uuid4())[:8]}",
+            "notes": {
+                "user_id": body.user_id,
+                "email": body.email,
+                "plan_name": body.plan_name
+            }
+        })
+        return {
+            "order_id": order["id"],
+            "amount": amount_paise,
+            "currency": "INR",
+            "key_id": key_id
+        }
+    except Exception as e:
+        logger.error(f"Razorpay order creation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not create payment order: {str(e)}")
+
+@router.post("/payments/razorpay/verify")
+async def verify_razorpay_payment(body: RazorpayVerifyInput):
+    """
+    Verify Razorpay payment signature and instantly upgrade user plan.
+    Called from frontend after successful payment callback.
+    """
+    import os, hmac, hashlib
+    key_secret = os.environ.get("RAZORPAY_KEY_SECRET", "")
+    if not key_secret:
+        raise HTTPException(status_code=503, detail="Razorpay not configured.")
+
+    # Verify HMAC signature to confirm payment is genuine
+    expected = hmac.new(
+        key_secret.encode("utf-8"),
+        f"{body.razorpay_order_id}|{body.razorpay_payment_id}".encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+    if not hmac.compare_digest(expected, body.razorpay_signature):
+        raise HTTPException(status_code=400, detail="Invalid payment signature. Payment could not be verified.")
+
+    # Signature valid — upgrade the user plan
+    db_plan = "enterprise" if body.plan_name.lower() in ("team", "enterprise") else "pro"
+    if supabase:
+        try:
+            supabase.table("profiles").update({"plan": db_plan}).eq("id", body.user_id).execute()
+            logger.info(f"Auto-upgraded user {body.user_id} to plan '{db_plan}' after Razorpay payment {body.razorpay_payment_id}")
+        except Exception as e:
+            logger.error(f"Failed to upgrade plan after verified payment: {e}")
+            raise HTTPException(status_code=500, detail="Payment verified but plan upgrade failed. Contact support.")
+    else:
+        logger.warning("Supabase not initialized — plan upgrade skipped (demo mode).")
+
+    return {"status": "success", "plan": db_plan, "payment_id": body.razorpay_payment_id}
+
+@router.post("/payments/razorpay/webhook")
+async def razorpay_webhook(request: Request):
+    """
+    Razorpay webhook endpoint (optional server-side backup verification).
+    Configure this URL in your Razorpay Dashboard → Webhooks.
+    """
+    import os, hmac, hashlib, json
+    webhook_secret = os.environ.get("RAZORPAY_WEBHOOK_SECRET", "")
+    body_bytes = await request.body()
+    signature = request.headers.get("X-Razorpay-Signature", "")
+
+    if webhook_secret and signature:
+        expected = hmac.new(webhook_secret.encode(), body_bytes, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, signature):
+            raise HTTPException(status_code=400, detail="Invalid webhook signature")
+
+    payload = json.loads(body_bytes)
+    event = payload.get("event", "")
+
+    if event == "payment.captured":
+        payment = payload.get("payload", {}).get("payment", {}).get("entity", {})
+        notes = payment.get("notes", {})
+        user_id = notes.get("user_id", "")
+        plan_name = notes.get("plan_name", "pro")
+        db_plan = "enterprise" if plan_name.lower() in ("team", "enterprise") else "pro"
+
+        if supabase and user_id:
+            try:
+                supabase.table("profiles").update({"plan": db_plan}).eq("id", user_id).execute()
+                logger.info(f"Webhook: upgraded user {user_id} to {db_plan}")
+            except Exception as e:
+                logger.error(f"Webhook plan upgrade failed: {e}")
+
+    return {"status": "ok"}
