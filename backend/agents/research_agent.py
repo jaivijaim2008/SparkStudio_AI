@@ -23,6 +23,13 @@ class ResearchAgent(BaseAgent):
         self._logger.info("Starting Research Agent for topic: %s", project_input.topic)
         system_prompt = self._load_prompt("research_prompt.txt")
         
+        if project_input.platform.lower() == "linkedin":
+            system_prompt += (
+                "\n\nSPECIAL LINKEDIN OPTIMIZATION:\n"
+                "Focus on professional B2B trends, industry leadership, career development, productivity, "
+                "entrepreneurship, and B2B pain points. The hook should be professional and thought-provoking."
+            )
+        
         # Build the user prompt
         user_prompt = (
             f"Topic: {project_input.topic}\n"

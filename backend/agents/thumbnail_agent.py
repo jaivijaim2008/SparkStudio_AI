@@ -22,6 +22,14 @@ class ThumbnailAgent(BaseAgent):
         self._logger.info("Starting Thumbnail Agent")
         system_prompt = self._load_prompt("thumbnail_prompt.txt")
         
+        if project_input.platform.lower() == "linkedin":
+            system_prompt += (
+                "\n\nSPECIAL LINKEDIN OPTIMIZATION:\n"
+                "Instead of a standard video thumbnail, design this as a LinkedIn Carousel Cover Slide or "
+                "a professional single-image post graphic. Use professional colors (e.g. deep slate, navy, corporate gold, clean white), "
+                "bold and readable typography, and minimalist layouts suitable for a corporate feed."
+            )
+        
         context_block = self._build_context_block(context)
         
         user_prompt = (

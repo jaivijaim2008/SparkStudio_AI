@@ -23,6 +23,15 @@ class ScriptAgent(BaseAgent):
         self._logger.info("Starting Script Agent")
         system_prompt = self._load_prompt("script_prompt.txt")
         
+        if project_input.platform.lower() == "linkedin":
+            system_prompt += (
+                "\n\nSPECIAL LINKEDIN OPTIMIZATION:\n"
+                "You are an elite LinkedIn content creator. Write the script as a high-value, highly readable "
+                "LinkedIn text post. Use standard LinkedIn formatting: short, single-sentence hook, spaces "
+                "between lines for readability, bullet points for key insights, and a thought-provoking CTA at the end. "
+                "Instead of video B-roll, suggest static carousel slide ideas in the cues (e.g. '[SLIDE 1: Title]')."
+            )
+        
         # Build context from previous agents (mainly research)
         context_block = self._build_context_block(context)
         

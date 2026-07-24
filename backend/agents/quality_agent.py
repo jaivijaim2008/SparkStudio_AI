@@ -22,6 +22,14 @@ class QualityAgent(BaseAgent):
         self._logger.info("Starting Quality Agent")
         system_prompt = self._load_prompt("quality_prompt.txt")
         
+        if project_input.platform.lower() == "linkedin":
+            system_prompt += (
+                "\n\nSPECIAL LINKEDIN OPTIMIZATION:\n"
+                "Audit the script for professional tone, educational value, corporate credibility, formatting flow "
+                "(hook, whitespace, bulleted insights, CTA), and B2B engagement potential. Reject overly casual clickbait "
+                "or sensory stimulation cues that do not fit a professional context."
+            )
+        
         context_block = self._build_context_block(context)
         
         user_prompt = (

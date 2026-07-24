@@ -22,6 +22,13 @@ class SEOAgent(BaseAgent):
         self._logger.info("Starting SEO Agent")
         system_prompt = self._load_prompt("seo_prompt.txt")
         
+        if project_input.platform.lower() == "linkedin":
+            system_prompt += (
+                "\n\nSPECIAL LINKEDIN OPTIMIZATION:\n"
+                "Focus on professional LinkedIn hashtags (3-5 max), clean search terms, and professional post "
+                "formatting tips. Suggest optimal posting times for professional B2B audiences (typically mid-week mornings)."
+            )
+        
         context_block = self._build_context_block(context)
         
         user_prompt = (
