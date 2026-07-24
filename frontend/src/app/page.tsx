@@ -466,11 +466,11 @@ export default function LandingPage() {
 
       {/* UPI Checkout Modal */}
       {upiModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md text-left">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/60 backdrop-blur-md text-left overflow-y-auto">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-sm glass-card p-6 md:p-8 rounded-[32px] border border-purple-500/40 relative bg-white/95 dark:bg-zinc-950/95 shadow-2xl"
+            className="w-full max-w-sm mx-auto glass-card p-5 md:p-7 rounded-[28px] border border-purple-500/40 relative bg-white/95 dark:bg-zinc-950/95 shadow-2xl overflow-y-auto max-h-[calc(100vh-3rem)]"
           >
             <button 
               onClick={() => setUpiModalOpen(false)}
