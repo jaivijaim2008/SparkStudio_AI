@@ -26,7 +26,6 @@ export function StoryboardImage({
   const [src, setSrc] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
 
   // Set early error state if prompt is completely missing
   useEffect(() => {
@@ -37,7 +36,7 @@ export function StoryboardImage({
     }
   }, [prompt]);
 
-  // Re-generate URL when prompt, retryCount, or shouldLoad changes
+  // Re-generate URL when prompt or shouldLoad changes
   useEffect(() => {
     if (!shouldLoad || !prompt) return;
 
@@ -52,26 +51,11 @@ export function StoryboardImage({
       .trim();
 
     const encodedPrompt = encodeURIComponent(sanitizedPrompt.substring(0, 450));
-    const seed = (sceneNumber * 1337) + (retryCount * 42);
-    const cacheBuster = retryCount > 0 ? `&r=${retryCount}` : '';
-    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=sana&seed=${seed}${cacheBuster}`;
+    const seed = (sceneNumber * 1337);
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=turbo&seed=${seed}`;
     
     setSrc(url);
-  }, [prompt, sceneNumber, retryCount, shouldLoad]);
-
-  // Watchdog timer: If loading hangs for more than 6s, manually trigger a retry
-  useEffect(() => {
-    if (!shouldLoad || !src || !loading || error) return;
-
-    const timer = setTimeout(() => {
-      if (loading) {
-        console.warn(`StoryboardImage Scene ${sceneNumber} hung for 6s. Triggering backoff retry...`);
-        handleError();
-      }
-    }, 6000);
-
-    return () => clearTimeout(timer);
-  }, [src, loading, shouldLoad, retryCount]);
+  }, [prompt, sceneNumber, shouldLoad]);
 
   const handleLoad = () => {
     setLoading(false);
@@ -80,24 +64,15 @@ export function StoryboardImage({
   };
 
   const handleError = () => {
-    // Exponential backoff delay: 2s, 4s, 8s, 16s, 30s... up to 8 attempts (total duration ~2.5 minutes)
-    if (retryCount < 8) {
-      const backoffDelay = Math.min(Math.pow(2, retryCount + 1) * 1000, 30000);
-      setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-      }, backoffDelay);
-    } else {
-      setLoading(false);
-      setError(true);
-      onLoadError();
-    }
+    setLoading(false);
+    setError(true);
+    onLoadError();
   };
 
   const handleManualRetry = (e: React.MouseEvent) => {
     e.stopPropagation();
     setError(false);
     setLoading(true);
-    setRetryCount(prev => prev + 1);
   };
 
   // The fallback is a premium abstract CSS gradient representing a digital scene
@@ -136,7 +111,7 @@ export function StoryboardImage({
                 <>
                   <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
                   <span className="text-[9px] text-white/40 font-medium animate-pulse">
-                    {retryCount > 0 ? `Retrying visual (${retryCount}/8)...` : 'Generating visual...'}
+                    Generating visual...
                   </span>
                 </>
               )}

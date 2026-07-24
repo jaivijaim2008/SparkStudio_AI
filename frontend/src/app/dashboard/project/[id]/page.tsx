@@ -32,44 +32,16 @@ export default function ProjectResultPage() {
   const [projectData, setProjectData] = useState<any>({});
   const [imageStatuses, setImageStatuses] = useState<string[]>([]);
 
-  // Initialize image load status array when storyboard scenes load
+  // Initialize image load status array when storyboard scenes load to trigger parallel loading
   useEffect(() => {
     if (projectData?.storyboard?.scenes) {
       const len = projectData.storyboard.scenes.length;
       setImageStatuses(prev => {
         if (prev.length === len) return prev;
-        return new Array(len).fill('pending');
+        return new Array(len).fill('loading');
       });
     }
   }, [projectData]);
-
-  const scheduledIndexRef = useRef<number | null>(null);
-
-  // Queue coordinator: load storyboard images in parallel batches (concurrency: 3) with a 200ms micro-stagger
-  useEffect(() => {
-    if (imageStatuses.length === 0) return;
-    
-    const activeCount = imageStatuses.filter(s => s === 'loading').length;
-    if (activeCount < 3) {
-      const nextIdx = imageStatuses.findIndex(s => s === 'pending');
-      if (nextIdx !== -1 && scheduledIndexRef.current !== nextIdx) {
-        scheduledIndexRef.current = nextIdx;
-        const timer = setTimeout(() => {
-          setImageStatuses(prev => {
-            const next = [...prev];
-            next[nextIdx] = 'loading';
-            return next;
-          });
-          scheduledIndexRef.current = null;
-        }, 200); // 200ms micro-stagger between parallel image requests
-        
-        return () => {
-          clearTimeout(timer);
-          scheduledIndexRef.current = null;
-        };
-      }
-    }
-  }, [imageStatuses]);
 
   // Elapsed timer
   useEffect(() => {
