@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowRight, Bot, Video, Mic, Play, Sparkles, LayoutTemplate, PenTool, Zap, Shield, Globe, Check, LogOut, User, X, Wand2, Rocket } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { apiUrl } from '@/lib/api';
 
 export default function LandingPage() {
   const [sessionUser, setSessionUser] = useState<any>(null);
