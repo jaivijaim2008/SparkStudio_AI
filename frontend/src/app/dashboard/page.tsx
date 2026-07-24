@@ -51,38 +51,55 @@ export default function DashboardOverview() {
     const loadProfileAndCount = async () => {
       try {
         const supabase = createClient();
-        if (!supabase) return;
+        if (!supabase) { setProfile({ plan: 'free' }); return; }
 
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session || !session.user) return;
+        if (!session || !session.user) { setProfile({ plan: 'free' }); return; }
 
-        // Fetch profile
-        const { data: prof } = await supabase
+        // Fetch profile — try by id first, then by email as fallback
+        let prof: any = null;
+        const { data: profById } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
+
+        if (profById) {
+          prof = profById;
+        } else {
+          // Fallback: try by email (handles RLS or id mismatch edge cases)
+          const { data: profByEmail } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('email', session.user.email)
+            .maybeSingle();
+          prof = profByEmail;
+        }
 
         if (prof) {
           setProfile(prof);
-          
+
           // Fetch exact project count
           const { count } = await supabase
             .from('projects')
             .select('*', { count: 'exact', head: true })
             .eq('input->>user_email', session.user.email);
-            
+
           setProjectCount(count || 0);
 
           // Calculate trial expiry hours (24 hours trial)
-          const regDate = new Date(prof.created_at);
+          const regDate = new Date(prof.created_at || session.user.created_at);
           const now = new Date();
           const msLeft = (24 * 60 * 60 * 1000) - (now.getTime() - regDate.getTime());
           const hrsLeft = Math.max(0, Math.floor(msLeft / (1000 * 60 * 60)));
           setHoursLeft(hrsLeft);
+        } else {
+          // Profile not found — show free defaults so spinner doesn't hang
+          setProfile({ plan: 'free', created_at: session.user.created_at });
         }
       } catch (e) {
         console.error("Failed to load profile settings:", e);
+        setProfile({ plan: 'free' }); // Always resolve so spinner stops
       }
     };
     loadProfileAndCount();
