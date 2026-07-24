@@ -472,3 +472,12 @@ async def generate_linkedin_post(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"Failed to generate LinkedIn post from certificate: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to process certificate: {str(e)}")
+
+@router.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "supabase_initialized": supabase is not None,
+        "demo_mode": settings.DEMO_MODE,
+        "llm_provider": settings.LLM_PROVIDER
+    }
