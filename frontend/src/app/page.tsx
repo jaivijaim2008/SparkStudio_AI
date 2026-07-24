@@ -210,10 +210,24 @@ export default function LandingPage() {
           <span className="text-slate-900 dark:text-white">
             One Prompt.
           </span>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#c084fc] via-[#a78bfa] to-[#60a5fa]">
+          <span
+            style={{
+              background: 'linear-gradient(to right, #c084fc, #a78bfa, #60a5fa)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              display: 'inline-block'
+            }}
+          >
             Complete Content
           </span>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#38bdf8] via-[#0ea5e9] to-[#00f2fe]">
+          <span
+            style={{
+              background: 'linear-gradient(to right, #38bdf8, #0ea5e9, #00f2fe)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              display: 'inline-block'
+            }}
+          >
             Production.
           </span>
         </motion.h1>
