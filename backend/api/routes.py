@@ -218,7 +218,12 @@ async def get_project(project_id: str):
     raise HTTPException(status_code=404, detail="Project not found")
 
 @router.get("/project/{project_id}/export")
-async def export_project(project_id: str, format: str = "pdf"):
+async def export_project(
+    project_id: str, 
+    format: str = "pdf",
+    subtitles: str = "true",
+    storyboard: str = "true"
+):
     project_data = None
     
     if project_id in fake_db:
@@ -240,7 +245,11 @@ async def export_project(project_id: str, format: str = "pdf"):
     topic_slug = "".join([c if c.isalnum() else "_" for c in project_data.get("input", {}).get("topic", "sparkstudio")])
     
     if format == "zip":
-        zip_bytes = ExportService.generate_zip_package(project_data)
+        zip_bytes = ExportService.generate_zip_package(
+            project_data,
+            include_subtitles=(subtitles.lower() == "true"),
+            include_storyboard=(storyboard.lower() == "true")
+        )
         filename = f"sparkstudio_{topic_slug[:30]}.zip"
         return StreamingResponse(
             io.BytesIO(zip_bytes),

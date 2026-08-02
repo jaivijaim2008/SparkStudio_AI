@@ -19,6 +19,7 @@ export default function ProjectResultPage() {
   const [userPlan, setUserPlan] = useState('free');
   const startTimeRef = useRef(Date.now());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasAutoDownloaded = useRef(false);
   
   const [agents, setAgents] = useState([
     { name: 'Research', key: 'research', status: 'pending', icon: Search },
@@ -175,13 +176,29 @@ export default function ProjectResultPage() {
       toast.error('ZIP export is a Pro/Team plan feature. Upgrade to download all assets.');
       return;
     }
+    
+    // Read preferences from localStorage (defaulting to true if not set)
+    const incSub = localStorage.getItem('sparkstudio-subtitles') !== 'false';
+    const incStory = localStorage.getItem('sparkstudio-storyboard') !== 'false';
+
     const link = document.createElement('a');
-    link.href = apiUrl(`/api/project/${projectId}/export?format=zip`);
+    link.href = apiUrl(`/api/project/${projectId}/export?format=zip&subtitles=${incSub}&storyboard=${incStory}`);
     link.download = `sparkstudio_${projectId}.zip`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
+
+  useEffect(() => {
+    if (status === 'completed' && (userPlan === 'pro' || userPlan === 'team')) {
+      const autoDownload = localStorage.getItem('sparkstudio-autodownload') === 'true';
+      if (autoDownload && !hasAutoDownloaded.current) {
+        hasAutoDownloaded.current = true;
+        toast.success("Auto-downloading project ZIP...");
+        setTimeout(() => handleDownload(), 1000);
+      }
+    }
+  }, [status, userPlan]);
 
   const handleMarkdownExport = () => {
     if (userPlan === 'free') {

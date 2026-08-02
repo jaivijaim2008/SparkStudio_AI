@@ -369,7 +369,7 @@ class ExportService:
         return pdf.output()
 
     @staticmethod
-    def generate_zip_package(project_data: dict) -> bytes:
+    def generate_zip_package(project_data: dict, include_subtitles: bool = True, include_storyboard: bool = True) -> bytes:
         """Packages all outputs into a ZIP file."""
         zip_buffer = io.BytesIO()
         
@@ -379,11 +379,19 @@ class ExportService:
             if script_data:
                 zip_file.writestr("script.txt", script_data.get("full_script", ""))
                 
-            # Add Subtitles
-            subtitles_data = project_data.get("subtitles") or {}
-            if subtitles_data:
-                zip_file.writestr("captions.srt", subtitles_data.get("srt_content", ""))
-                zip_file.writestr("captions.vtt", subtitles_data.get("vtt_content", ""))
+            # Add Subtitles (if requested)
+            if include_subtitles:
+                subtitles_data = project_data.get("subtitles") or {}
+                if subtitles_data:
+                    zip_file.writestr("captions.srt", subtitles_data.get("srt_content", ""))
+                    zip_file.writestr("captions.vtt", subtitles_data.get("vtt_content", ""))
+                    
+            # Add Storyboard (if requested)
+            if include_storyboard:
+                storyboard_data = project_data.get("storyboard") or {}
+                if storyboard_data:
+                    import json
+                    zip_file.writestr("storyboard.json", json.dumps(storyboard_data, indent=2))
                 
             # Add PDF Report
             pdf_bytes = ExportService.generate_pdf_report(project_data)
