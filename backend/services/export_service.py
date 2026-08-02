@@ -185,7 +185,7 @@ class ExportService:
             pdf.cell(0, 6, "Hook Directions:", ln=True)
             pdf.set_font("helvetica", "", 9)
             pdf.set_text_color(50, 50, 60)
-            hooks = research.get("hooks", [])
+            hooks = research.get("hooks") or []
             for hook in hooks[:3]:
                 pdf.multi_cell(0, 5, f"- {clean_str(hook)}")
             pdf.ln(4)
@@ -195,7 +195,7 @@ class ExportService:
             pdf.cell(0, 6, "Viral Audience Angles:", ln=True)
             pdf.set_font("helvetica", "", 9)
             pdf.set_text_color(50, 50, 60)
-            angles = research.get("viral_angles", [])
+            angles = research.get("viral_angles") or []
             for angle in angles[:3]:
                 pdf.multi_cell(0, 5, f"- {clean_str(angle)}")
             pdf.ln(4)
@@ -212,7 +212,7 @@ class ExportService:
         
         if "script" in project_data and isinstance(project_data["script"], dict):
             script = project_data["script"]
-            full_script = script.get("full_script", "")
+            full_script = script.get("full_script") or ""
             
             # Script block in a colored box
             pdf.set_fill_color(250, 250, 252)
@@ -240,7 +240,7 @@ class ExportService:
             pdf.ln(3)
             
             storyboard = project_data["storyboard"]
-            scenes = storyboard.get("scenes", [])
+            scenes = storyboard.get("scenes") or []
             
             for scene in scenes:
                 # Border box check to keep card on page
@@ -359,7 +359,7 @@ class ExportService:
             pdf.cell(0, 6, "Optimisation Suggestions:", ln=True)
             pdf.set_font("helvetica", "", 9)
             pdf.set_text_color(50, 50, 60)
-            suggestions = quality.get("suggestions", [])
+            suggestions = quality.get("suggestions") or []
             for item in suggestions[:4]:
                 pdf.multi_cell(0, 5, f"- {clean_str(item)}")
         else:
@@ -377,14 +377,17 @@ class ExportService:
             # Add Script
             script_data = project_data.get("script") or {}
             if script_data:
-                zip_file.writestr("script.txt", script_data.get("full_script", ""))
+                script_text = script_data.get("full_script") or ""
+                zip_file.writestr("script.txt", script_text)
                 
             # Add Subtitles (if requested)
             if include_subtitles:
                 subtitles_data = project_data.get("subtitles") or {}
                 if subtitles_data:
-                    zip_file.writestr("captions.srt", subtitles_data.get("srt_content", ""))
-                    zip_file.writestr("captions.vtt", subtitles_data.get("vtt_content", ""))
+                    srt = subtitles_data.get("srt_content") or ""
+                    vtt = subtitles_data.get("vtt_content") or ""
+                    zip_file.writestr("captions.srt", srt)
+                    zip_file.writestr("captions.vtt", vtt)
                     
             # Add Storyboard (if requested)
             if include_storyboard:
