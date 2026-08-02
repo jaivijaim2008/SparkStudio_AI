@@ -114,7 +114,7 @@ export default function NewProject() {
     setSummaryResult(null);
 
     try {
-      const response = await fetch(apiUrl('/api/youtube/summarize'), {
+      const response = await fetch(apiUrl('/api/video/summarize'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: youtubeUrl.trim() }),

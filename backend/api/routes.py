@@ -365,7 +365,7 @@ class YouTubeSummarizeRequest(BaseModel):
     url: str
 
 
-@router.post("/youtube/summarize")
+@router.post("/video/summarize")
 async def summarize_youtube(request_data: YouTubeSummarizeRequest, request: Request):
     """
     Extract transcript from a YouTube video URL and generate an AI summary.
