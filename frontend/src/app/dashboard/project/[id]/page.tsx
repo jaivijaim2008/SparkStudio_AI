@@ -49,7 +49,7 @@ export default function ProjectResultPage() {
 
   const scheduledIndexRef = useRef<number | null>(null);
 
-  // Queue coordinator: stagger image requests by 200ms to prevent Pollinations rate limiting
+  // Queue coordinator: stagger image requests by 3000ms to prevent Pollinations rate limiting
   useEffect(() => {
     if (imageStatuses.length === 0) return;
     
@@ -63,7 +63,7 @@ export default function ProjectResultPage() {
           return next;
         });
         scheduledIndexRef.current = null;
-      }, 200); // 200ms spacing between triggers
+      }, 3000); // 3000ms spacing between triggers
       
       return () => {
         clearTimeout(timer);
