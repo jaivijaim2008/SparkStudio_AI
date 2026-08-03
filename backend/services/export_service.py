@@ -36,7 +36,7 @@ class SparkStudioPDF(FPDF):
         # Header text
         self.set_font("helvetica", "B", 8)
         self.set_text_color(140, 140, 150)
-        self.cell(0, 12, "SPARKSTUDIO AI — CONTENT AUDIT & PRODUCTION REPORT", ln=False, align="L")
+        self.cell(0, 12, "SPARKSTUDIO AI - CONTENT AUDIT & PRODUCTION REPORT", ln=False, align="L")
         self.set_font("helvetica", "", 8)
         self.cell(0, 12, "CONFIDENTIAL", ln=True, align="R")
         self.ln(2)
@@ -187,7 +187,7 @@ class ExportService:
             pdf.set_text_color(50, 50, 60)
             hooks = research.get("hooks") or []
             for hook in hooks[:3]:
-                pdf.multi_cell(0, 5, f"- {clean_str(hook)}")
+                pdf.multi_cell(0, 5, f"- {clean_str(hook)}", new_x="LMARGIN", new_y="NEXT")
             pdf.ln(4)
             
             pdf.set_font("helvetica", "B", 10)
@@ -197,7 +197,7 @@ class ExportService:
             pdf.set_text_color(50, 50, 60)
             angles = research.get("viral_angles") or []
             for angle in angles[:3]:
-                pdf.multi_cell(0, 5, f"- {clean_str(angle)}")
+                pdf.multi_cell(0, 5, f"- {clean_str(angle)}", new_x="LMARGIN", new_y="NEXT")
             pdf.ln(4)
         else:
             pdf.set_font("helvetica", "I", 10)
@@ -255,7 +255,7 @@ class ExportService:
                 pdf.set_draw_color(108, 92, 231)
                 pdf.set_font("helvetica", "B", 10)
                 pdf.set_text_color(108, 92, 231)
-                pdf.cell(180, 8, f" Scene {scene_num} ({duration}s) — Camera Angle: {angle}", border=1, ln=True, fill=True)
+                pdf.cell(180, 8, f" Scene {scene_num} ({duration}s) - Camera Angle: {angle}", border=1, ln=True, fill=True)
                 
                 # Card Content
                 pdf.set_fill_color(252, 252, 254)
@@ -361,7 +361,7 @@ class ExportService:
             pdf.set_text_color(50, 50, 60)
             suggestions = quality.get("suggestions") or []
             for item in suggestions[:4]:
-                pdf.multi_cell(0, 5, f"- {clean_str(item)}")
+                pdf.multi_cell(0, 5, f"- {clean_str(item)}", new_x="LMARGIN", new_y="NEXT")
         else:
             pdf.set_font("helvetica", "I", 10)
             pdf.cell(0, 6, "No audit data available.", ln=True)
