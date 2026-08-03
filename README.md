@@ -274,7 +274,7 @@ Built with 🔥 for **PRISM: Agentic AI Hackathon — Theme 3**
 |---|---|---|
 | **Jai Vijai M** *(Team Lead)* | Full-Stack AI Engineer & Harness Architect | 210425243091 |
 | **Bharath Priyan M** | Frontend & UI/UX | 210425243039 |
-| **Shri Harish N** | Backend & Agent Development | — |
+| **Shri Harish N** | Backend & Agent Development | 2104251040932 |
 | **Arunkumar I** | Database & Deployment | 210425243028 |
 
 **Department of Artificial Intelligence & Data Science**
