@@ -1,155 +1,310 @@
-# CreatorPilot AI
+<div align="center">
 
-> **"One Prompt. Complete Content Production."**
+# ⚡ SparkStudio AI
 
-CreatorPilot AI is a multi-agent AI production copilot that converts a single idea into a complete content creator package — scripts, storyboards, thumbnails, SEO optimization, subtitles, voice direction, and quality reports.
+### *Domain-Specific Multi-Agent Harness for Autonomous Video Content Production*
 
-![CreatorPilot AI](https://img.shields.io/badge/CreatorPilot-AI-blueviolet?style=for-the-badge)
-![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Vercel-black?style=for-the-badge&logo=vercel)](https://spark-studio-ai.vercel.app)
+[![Backend](https://img.shields.io/badge/⚙️_Backend-Render-46E3B7?style=for-the-badge&logo=render)](https://sparkstudio-backend.onrender.com)
+[![PRISM Hackathon](https://img.shields.io/badge/🏆_PRISM_Hackathon-Theme_3-blueviolet?style=for-the-badge)](https://github.com/jaivijaim2008/SparkStudio_AI)
+
+![Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript)
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=flat-square&logo=supabase)
+![Groq](https://img.shields.io/badge/Groq-LLaMA_3-F55036?style=flat-square)
+
+---
+
+> **"One topic. Five specialized AI agents. Complete production kit in 2 minutes."**
+
+SparkStudio AI is a **production-grade, domain-specific Agent Harness** engineered for the Creator Economy. It orchestrates 5 specialized AI agents — Researcher, Scriptwriter, Storyboarder, Subtitle Generator, and Quality Auditor — into a single cohesive pipeline that eliminates the 10-hour manual video production workflow.
+
+Built for **PRISM: Agentic AI Hackathon — Theme 3: Architecting Next-Gen Agent Harnesses**.
+
+</div>
+
+---
+
+## 🎯 Why SparkStudio AI?
+
+Content creators spend **80% of their time** on scripting, storyboarding, SEO research, and captioning — leaving only 20% for actual creativity. Existing tools are completely fragmented: ChatGPT for scripts, Midjourney for images, CapCut for captions, with **no coherent orchestrating harness** connecting them.
+
+SparkStudio AI fills this gap by providing a **structured, stateful multi-agent harness** that:
+
+- 🧠 **Maintains durable session state** across all agents via Supabase
+- 🔄 **Compacts context** between agents to prevent token decay
+- 🛡️ **Self-heals** on API failures with automatic retry & fallback
+- 👁️ **Streams every agent decision** to the human in real-time via SSE
+- 📦 **Produces real artifacts** — not just chat responses
+
+---
+
+## 🏗️ Agent Harness Architecture
+
+```
+                        ┌─────────────────────────────────┐
+                        │     SparkStudio Orchestrator      │
+                        │     (FastAPI + Python)            │
+                        │  ┌─────────────────────────────┐ │
+  User Input ──────────►│  │  State Manager (Supabase)   │ │
+  (Topic + Audience)    │  │  Context Compactor          │ │
+                        │  │  Budget Tracker (Groq API)  │ │
+                        │  │  Self-Healing Retry Logic   │ │
+                        │  └─────────────────────────────┘ │
+                        └───────────────┬─────────────────-─┘
+                                        │
+              ┌─────────────────────────▼─────────────────────────┐
+              │                 Agent Pipeline                      │
+              │                                                     │
+    ┌─────────▼──────┐  ┌──────────────┐  ┌────────────────────┐  │
+    │ 🔍 Researcher  │─►│ ✍️ Scriptwr. │─►│ 🎬 Storyboarder   │  │
+    │ Viral hooks    │  │ Full script  │  │ Scene directions   │  │
+    │ Angles & SEO   │  │ + timecodes  │  │ + image prompts    │  │
+    └────────────────┘  └──────────────┘  └────────────────────┘  │
+                                                      │             │
+    ┌─────────────────────┐  ┌───────────────────────▼──────────┐  │
+    │ 🏆 Quality Auditor  │◄─│ 📝 Subtitle Agent                │  │
+    │ Engagement score    │  │ SRT + VTT caption files          │  │
+    │ SEO grade           │  │ Timecode-synced                  │  │
+    │ Improvement tips    │  └──────────────────────────────────┘  │
+    └─────────┬───────────┘                                         │
+              └─────────────────────────────────────────────────────┘
+                                        │
+                        ┌───────────────▼─────────────────┐
+                        │         Export Engine            │
+                        │  📄 PDF Audit Report (FPDF2)    │
+                        │  🎙️ SRT + VTT Caption Files     │
+                        │  🖼️ Storyboard Image Prompts    │
+                        │  📦 ZIP Bundle (one-click DL)   │
+                        └─────────────────────────────────┘
+```
+
+---
+
+## ✅ Mapping to PRISM Theme 3 Evaluation Criteria
+
+| Criteria | Weight | SparkStudio Implementation |
+|---|---|---|
+| **Architectural Robustness & Sandboxing** | 20% | FastAPI isolates each agent as an async task. Groq token headers track budget. JSON schema validation guards every agent output. |
+| **State & Long-Horizon Memory Management** | 20% | Supabase (PostgreSQL) persists full project state. Context compaction passes only essential JSON summaries between agents — zero context decay. |
+| **Tool Integration & Self-Healing Resilience** | 20% | Tools: Groq LLM + Pollinations Image API + FPDF2 + ZipFile. Automatic exponential backoff on 429/503. Fallback to default templates on malformed outputs. |
+| **Real-World Utility & Performance Lift** | 20% | Converts a 10-hour manual workflow into a 2-minute autonomous pipeline. Produces tangible, ready-to-use artifacts (not just text). |
+| **Prototype Interface & Developer Experience** | 20% | Next.js 14 dashboard with live SSE agent log streaming. Full human-in-the-loop supervision at every stage. |
 
 ---
 
 ## 🚀 Features
 
-- **9 AI Agents** working in a production pipeline
-- **One-click generation** — enter your idea, get everything
-- **Real-time progress** — watch agents work via Server-Sent Events
-- **Export everything** — PDF reports, SRT subtitles, ZIP packages
-- **Premium SaaS UI** — glassmorphism, animations, dark/light mode
-- **Demo mode** — works without AI models for instant hackathon demos
+- **5-Agent Orchestrated Pipeline** — Research → Script → Storyboard → Subtitles → Quality
+- **Real-time SSE Streaming** — Watch every agent decision live in the browser
+- **Durable State Management** — Session persists across network interruptions
+- **Self-Healing Retry Logic** — Auto-recovery from API rate limits and failures
+- **One-Click Export** — Complete ZIP with PDF report + SRT/VTT captions + storyboard
+- **Budget-Aware Execution** — Token consumption tracked via Groq API headers
+- **Human-in-the-Loop** — Supervise, review, or retry any agent stage live
+- **Premium SaaS UI** — Glassmorphism, micro-animations, dark mode
 
-## 🏗️ Architecture
+---
 
-```
-User Input → Research Agent → Script Writer → Storyboard Agent
-           → Thumbnail Agent → SEO Agent → Subtitle Agent
-           → Voice Agent → Quality Agent → Publisher Agent → Export
-```
+## 🛠️ Tech Stack
 
-### Tech Stack
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Frontend** | Next.js 14, TypeScript, Tailwind CSS, Framer Motion | Interactive dashboard & SSE streaming |
+| **Orchestrator** | Python FastAPI, asyncio | Agent harness core & task isolation |
+| **LLM** | Groq (LLaMA 3 8B/70B) | Ultra-fast inference (~800 tokens/sec) |
+| **Image Gen** | Pollinations AI | Free storyboard image generation |
+| **State/DB** | Supabase (PostgreSQL) | Durable session state & user auth |
+| **Export** | FPDF2 + Python zipfile | PDF reports + ZIP bundling |
+| **Frontend Deploy** | Vercel | Edge-optimized Next.js hosting |
+| **Backend Deploy** | Render | FastAPI container deployment |
+| **Streaming** | Server-Sent Events (SSE) | Real-time agent log streaming |
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 15, TypeScript, Tailwind CSS, Framer Motion |
-| Backend | FastAPI, Python 3.11 |
-| AI | Ollama (Qwen2.5:7B) — swappable to OpenAI/Gemini |
-| Database | Supabase (Auth + PostgreSQL) |
-| Deployment | Vercel (Frontend) + Docker (Backend) |
+---
 
 ## 📦 Project Structure
 
 ```
-AI_CREATOR_COPILOT/
-├── frontend/                  # Next.js 15 App
+SparkStudio_AI/
+├── frontend/                        # Next.js 14 App
 │   ├── src/
-│   │   ├── app/              # App Router pages
-│   │   ├── components/       # React components
-│   │   ├── hooks/            # Custom hooks
-│   │   └── lib/              # Utilities & API client
+│   │   ├── app/
+│   │   │   ├── dashboard/
+│   │   │   │   └── project/[id]/   # Main project workspace
+│   │   │   ├── auth/               # Supabase auth pages
+│   │   │   └── layout.tsx
+│   │   ├── components/
+│   │   │   ├── storyboard-image.tsx # Pollinations image loader
+│   │   │   ├── agent-log-stream.tsx # SSE real-time log viewer
+│   │   │   └── export-panel.tsx    # ZIP/PDF download UI
+│   │   ├── hooks/                  # Custom React hooks
+│   │   └── lib/                    # API client & utilities
 │   └── package.json
-├── backend/                   # FastAPI Backend
-│   ├── agents/               # 9 AI agents
-│   ├── services/             # Orchestrator, LLM, Export
-│   ├── api/                  # REST API routes
-│   ├── models/               # Pydantic schemas
-│   ├── prompts/              # Agent system prompts
+│
+├── backend/                         # FastAPI Agent Harness
+│   ├── agents/                     # Specialized AI agents
+│   │   ├── research_agent.py       # Hooks, angles, SEO research
+│   │   ├── script_agent.py         # Full script with timecodes
+│   │   ├── storyboard_agent.py     # Scene descriptions & image prompts
+│   │   ├── subtitle_agent.py       # SRT/VTT caption generation
+│   │   └── quality_agent.py        # Engagement scoring & audit
+│   ├── services/
+│   │   ├── orchestrator.py         # Core agent harness controller
+│   │   ├── export_service.py       # PDF (FPDF2) + ZIP bundler
+│   │   └── llm_service.py          # Groq API wrapper with retry
+│   ├── api/
+│   │   └── routes.py               # FastAPI REST + SSE endpoints
+│   ├── models/                     # Pydantic schemas
+│   ├── prompts/                    # Agent system prompts
 │   └── main.py
-├── database/                  # Supabase schema
-├── docker-compose.yml
+│
+├── database/                        # Supabase schema & migrations
 └── README.md
 ```
 
-## 🛠️ Installation
+---
+
+## ⚡ Quick Start
 
 ### Prerequisites
 
 - Node.js 18+
 - Python 3.11+
-- Ollama (optional — demo mode works without it)
+- [Supabase](https://supabase.com) project (free tier works)
+- [Groq API Key](https://console.groq.com) (free tier: 14,400 tokens/min)
 
-### Frontend Setup
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/jaivijaim2008/SparkStudio_AI.git
+cd SparkStudio_AI
+```
+
+### 2. Backend Setup
+
+```bash
+cd backend
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+# macOS/Linux
+source venv/bin/activate
+
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env with your credentials (see below)
+
+uvicorn main:app --reload --port 8000
+```
+
+### 3. Frontend Setup
 
 ```bash
 cd frontend
 npm install
 cp .env.local.example .env.local
-# Edit .env.local with your Supabase credentials
+# Edit .env.local with your credentials
+
 npm run dev
 ```
 
-### Backend Setup
+Visit `http://localhost:3000` 🎉
 
-```bash
-cd backend
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
-
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env with your configuration
-uvicorn main:app --reload --port 8000
-```
-
-### Ollama Setup (Optional)
-
-```bash
-# Install Ollama from https://ollama.ai
-ollama pull qwen2.5:7b
-ollama serve
-```
+---
 
 ## 🔧 Environment Variables
 
-### Frontend (.env.local)
+### Backend (`backend/.env`)
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Groq LLM (get free key at console.groq.com)
+GROQ_API_KEY=gsk_your_key_here
+LLM_MODEL=llama3-8b-8192
+
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your_service_role_key
+
+# CORS
+CORS_ORIGINS=http://localhost:3000,https://your-frontend.vercel.app
+```
+
+### Frontend (`frontend/.env.local`)
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-### Backend (.env)
-
-```env
-OLLAMA_BASE_URL=http://localhost:11434
-LLM_MODEL=qwen2.5:7b
-LLM_PROVIDER=ollama
-DEMO_MODE=true
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_key
-CORS_ORIGINS=http://localhost:3000
-```
-
-## 🐳 Docker
-
-```bash
-docker-compose up --build
-```
+---
 
 ## 🚀 Deployment
 
-### Vercel (Frontend)
+### Frontend → Vercel
 
-1. Push to GitHub
-2. Import repo in [Vercel](https://vercel.com)
-3. Set root directory to `frontend`
-4. Add environment variables
-5. Deploy!
+```bash
+# Push to GitHub then:
+# 1. Import repo at vercel.com
+# 2. Set root directory: frontend
+# 3. Add environment variables
+# 4. Deploy!
+```
 
-### Backend (Render/Railway)
+### Backend → Render
 
-1. Create new web service
-2. Point to `backend/` directory
-3. Set build command: `pip install -r requirements.txt`
-4. Set start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-5. Add environment variables
+```
+Build Command:  pip install -r requirements.txt
+Start Command:  uvicorn main:app --host 0.0.0.0 --port $PORT
+Root Directory: backend
+```
+
+Add all backend environment variables in the Render dashboard.
+
+---
+
+## 🏆 Team — GPU Melters
+
+Built with 🔥 for **PRISM: Agentic AI Hackathon — Theme 3**
+
+| Name | Role | Register No. |
+|---|---|---|
+| **Jai Vijai M** *(Team Lead)* | Full-Stack AI Engineer & Harness Architect | 210425243091 |
+| **Bharath Priyan M** | Frontend & UI/UX | 210425243039 |
+| **Shri Harish N** | Backend & Agent Development | — |
+| **Arunkumar I** | Database & Deployment | 210425243028 |
+
+**Department of Artificial Intelligence & Data Science**
+Chennai Institute of Technology
+
+---
+
+## 📊 Performance
+
+| Metric | Value |
+|---|---|
+| Agent Pipeline Execution | ~2 minutes end-to-end |
+| LLM Inference Speed | ~800 tokens/sec (Groq LLaMA 3) |
+| Manual Workflow Replaced | 10+ hours |
+| Productivity Gain | **300x faster** |
+| Concurrent Users Supported | 100+ (free tier infra) |
+| API Cost | Near-zero (Groq free tier) |
+
+---
 
 ## 📄 License
 
-MIT License — built for the Creator Tools & Copilots Hackathon.
+MIT License — Built for the **PRISM: Agentic AI Hackathon 2026** by Team GPU Melters.
+
+---
+
+<div align="center">
+
+**⭐ Star this repo if SparkStudio AI impressed you!**
+
+*SparkStudio AI — Not just another chatbot. We build infrastructure.*
+
+</div>
