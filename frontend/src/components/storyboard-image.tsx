@@ -49,6 +49,12 @@ export function StoryboardImage({
     setLoading(true);
     setError(false);
 
+    const extractSubjectTag = (text: string) => {
+      const clean = (text || '').replace(/\[.*?\]/g, '').replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx|the|and|with|that|this|for|from|into|over|host|scene|shot|view)\b/gi, '');
+      const words = clean.replace(/[^\w\s]/g, ' ').split(/\s+/).filter(w => w.length > 3);
+      return words.slice(0, 2).join(',') || 'cinematic';
+    };
+
     // Call server-side API proxy (zero CORS, zero client timeouts, fast response)
     fetch(apiUrl('/api/image/generate'), {
       method: 'POST',
@@ -60,12 +66,13 @@ export function StoryboardImage({
         if (data?.image_url) {
           setSrc(data.image_url);
         } else {
-          // Reliable fallback if server search empty
-          setSrc(`https://loremflickr.com/480/270/technology?random=${sceneNumber + retryCount}`);
+          const tag = extractSubjectTag(prompt);
+          setSrc(`https://loremflickr.com/480/270/${encodeURIComponent(tag)}?random=${sceneNumber + retryCount}`);
         }
       })
       .catch(() => {
-        setSrc(`https://loremflickr.com/480/270/technology?random=${sceneNumber + retryCount}`);
+        const tag = extractSubjectTag(prompt);
+        setSrc(`https://loremflickr.com/480/270/${encodeURIComponent(tag)}?random=${sceneNumber + retryCount}`);
       });
   }, [prompt, preloadedUrl, sceneNumber, retryCount, shouldLoad]);
 

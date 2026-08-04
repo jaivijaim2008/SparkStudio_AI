@@ -749,19 +749,28 @@ class ImageGenerateRequest(BaseModel):
 @router.post("/image/generate")
 async def generate_scene_image(body: ImageGenerateRequest):
     """
-    Generate unique AI image per scene using Pollinations AI with prompt-specific seeds.
+    Generate high-adherence AI image matching the scene content using FLUX AI.
     """
     import urllib.parse
     import re
 
-    clean = re.sub(r'\[.*?\]', '', body.prompt or '')
+    raw_prompt = body.prompt or ''
+    # Strip bracketed cues like [B-ROLL: ...] or [SFX: ...]
+    clean = re.sub(r'\[.*?\]', '', raw_prompt)
     clean = re.sub(r'\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b', '', clean, flags=re.IGNORECASE)
-    clean = clean.strip()[:250]
+    clean = re.sub(r'\s+', ' ', clean).strip()[:300]
+
     if not clean:
-        clean = f"cinematic scene {body.scene_number}"
+        clean = f"cinematic film scene {body.scene_number}"
 
-    encoded = urllib.parse.quote(clean + " cinematic photorealistic 8k")
-    seed = (body.scene_number * 7919) + (abs(hash(clean)) % 10000)
-    pol_url = f"https://image.pollinations.ai/prompt/{encoded}?width=480&height=270&nologo=true&model=turbo&seed={seed}"
+    # Append high-adherence visual quality keywords
+    enhanced_prompt = f"{clean}, cinematic photorealistic 8k, movie scene stills, vivid details"
+    encoded = urllib.parse.quote(enhanced_prompt)
 
-    return {"status": "success", "image_url": pol_url, "source": "pollinations"}
+    # Deterministic prompt-based seed
+    seed = (body.scene_number * 10007) + (abs(hash(clean)) % 50000)
+
+    # Use model=flux for exact content adherence
+    pol_url = f"https://image.pollinations.ai/prompt/{encoded}?width=480&height=270&nologo=true&model=flux&seed={seed}"
+
+    return {"status": "success", "image_url": pol_url, "source": "pollinations_flux"}
