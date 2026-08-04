@@ -30,40 +30,57 @@ export function StoryboardImage({
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
-  // ── Build URL: prefer backend pre-warmed URL, else generate client-side ──
+  const [lexicaUrl, setLexicaUrl] = useState('');
+  const [useFallback, setUseFallback] = useState(false); // true = skip to Picsum/Pollinations
+
+  // ── Source priority: preloadedUrl → Lexica → Picsum → Pollinations ──────
   useEffect(() => {
     if (!prompt && !preloadedUrl) {
-      setError(true);
-      setLoading(false);
-      onLoadError();
-      return;
+      setError(true); setLoading(false); onLoadError(); return;
     }
-
-    // If backend already pre-warmed the image, use it immediately — no queue needed
-    if (preloadedUrl) {
-      setSrc(preloadedUrl);
-      return;
-    }
-
-    // Fallback: client-side generation (only if preloadedUrl missing and shouldLoad = true)
+    // 1. Backend pre-warmed URL — instant, use directly
+    if (preloadedUrl) { setSrc(preloadedUrl); return; }
     if (!shouldLoad) return;
 
-    setLoading(true);
-    setError(false);
+    setLoading(true); setError(false);
 
     const sanitized = prompt
-      .replace(/[\n\r]+/g, ' ')
-      .replace(/["']/g, '')
-      .replace(/[^\w\s,.?-]/g, '')
-      .trim();
+      .replace(/[\n\r]+/g, ' ').replace(/["']/g, '')
+      .replace(/[^\w\s,.?-]/g, '').trim();
 
-    const encodedPrompt = encodeURIComponent(sanitized.substring(0, 450));
-    const seed = (sceneNumber * 1337) + (retryCount * 42);
-    const cacheBuster = retryCount > 0 ? `&r=${retryCount}` : '';
-    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=turbo&seed=${seed}${cacheBuster}`;
+    if (!useFallback && retryCount === 0) {
+      // 2. Lexica.art — searches millions of pre-generated SD images, instant CDN
+      const q = encodeURIComponent(sanitized.substring(0, 100));
+      fetch(`https://lexica.art/api/v1/search?q=${q}`)
+        .then(r => r.json())
+        .then(data => {
+          const images = data?.images;
+          if (images && images.length > 0) {
+            // Pick an image offset by scene number for variety
+            const pick = images[sceneNumber % images.length];
+            const url = pick?.src || pick?.srcSmall || '';
+            if (url) { setSrc(url); return; }
+          }
+          // No results — fall through to Picsum
+          setUseFallback(true);
+        })
+        .catch(() => setUseFallback(true));
+    } else {
+      // 3. Picsum Photos — instant Cloudflare CDN, beautiful random photos
+      //    Deterministic seed per scene so same scene always gets same photo
+      const seed = (sceneNumber * 7 + 13) * (retryCount + 1);
+      const picsumUrl = `https://picsum.photos/seed/${seed}/480/270`;
 
-    setSrc(url);
-  }, [prompt, preloadedUrl, sceneNumber, retryCount, shouldLoad]);
+      // 4. Pollinations as final fallback (slow but AI-generated)
+      const encodedPrompt = encodeURIComponent(sanitized.substring(0, 450));
+      const polSeed = (sceneNumber * 1337) + (retryCount * 42);
+      const polUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=turbo&seed=${polSeed}`;
+
+      // Try Picsum first (instant), fallback to Pollinations on error
+      setSrc(picsumUrl);
+      setLexicaUrl(polUrl); // stored as backup if Picsum fails too
+    }
+  }, [prompt, preloadedUrl, sceneNumber, retryCount, shouldLoad, useFallback]);
 
   const handleLoad = () => {
     setLoading(false);
@@ -72,10 +89,16 @@ export function StoryboardImage({
   };
 
   const handleError = () => {
-    if (retryCount < 8) {
-      // Exponential backoff: 1s, 2s, 4s, 8s… avoids hammering Pollinations
-      const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+    // If currently showing Picsum and Pollinations URL is available, try it
+    if (lexicaUrl && src.includes('picsum')) {
+      setSrc(lexicaUrl);
+      setLexicaUrl('');
+      return;
+    }
+    if (retryCount < 5) {
+      const delay = Math.min(1000 * Math.pow(2, retryCount), 8000);
       setTimeout(() => {
+        setUseFallback(true);
         setRetryCount(prev => prev + 1);
       }, delay);
     } else {
