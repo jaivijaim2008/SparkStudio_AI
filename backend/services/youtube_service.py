@@ -82,13 +82,17 @@ async def fetch_video_metadata(client: httpx.AsyncClient, video_id: str) -> Dict
 
 def fetch_transcript(video_id: str) -> str:
     """
-    Fetch transcript/captions for a YouTube video using youtube-transcript-api.
-    Falls back to a public URL-based transcript extractor if local fetching fails (e.g. cloud IP blocked).
+    Fetch transcript for a YouTube video.
+    Uses multiple methods in order to handle cloud IP blocks:
+      1. youtube-transcript-api (direct, works locally)
+      2. supadata.ai public API (cloud-friendly)
+      3. youtubetranscript.com scraper (final fallback)
     """
     import os
     import http.cookiejar
     import requests
 
+    # ── Method 1: youtube-transcript-api ────────────────────────────────────
     session = None
     cookies_path = getattr(settings, "YOUTUBE_COOKIES_PATH", "")
     if cookies_path and os.path.exists(cookies_path):
@@ -97,68 +101,95 @@ def fetch_transcript(video_id: str) -> str:
             cookie_jar = http.cookiejar.MozillaCookieJar(cookies_path)
             cookie_jar.load(ignore_discard=True, ignore_expires=True)
             session.cookies = cookie_jar
-            logger.info(f"Loaded YouTube cookies from {cookies_path} for video {video_id}")
         except Exception as e:
-            logger.error(f"Failed to load YouTube cookies from {cookies_path}: {e}")
+            logger.warning(f"Failed to load YouTube cookies: {e}")
             session = None
 
     try:
         ytt = YouTubeTranscriptApi(http_client=session)
-        
-        # Try fetching default transcript first
         try:
             snippets = ytt.fetch(video_id)
-            full_text = " ".join([getattr(s, 'text', '') if not isinstance(s, dict) else s.get('text', '') for s in snippets])
+            full_text = " ".join([
+                getattr(s, 'text', '') if not isinstance(s, dict) else s.get('text', '')
+                for s in snippets
+            ])
             if full_text.strip():
+                logger.info("Transcript fetched via youtube-transcript-api")
                 return full_text
         except Exception:
             pass
-            
-        # Try listing transcripts to find available languages
+
         transcript_list = ytt.list(video_id)
-        
-        # Try English transcripts first
         try:
             transcript = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
         except Exception:
-            # Fallback to any transcript available (manual or auto-generated)
             transcript = next(iter(transcript_list))
-            
-        snippets = transcript.fetch()
-        full_text = " ".join([getattr(s, 'text', '') if not isinstance(s, dict) else s.get('text', '') for s in snippets])
-        
-        if not full_text.strip():
-            raise ValueError("Transcript text was empty.")
-            
-        return full_text
-        
-    except Exception as exc:
-        logger.warning(
-            "youtube-transcript-api failed for video %s: %s. Trying public transcript fallback...",
-            video_id, exc
-        )
-        # Fallback to public URL extractor
-        try:
-            url = f"https://youtube-transcript.ai/transcript/{video_id}.txt"
-            res = requests.get(url, timeout=15)
-            if res.status_code == 200 and res.text:
-                raw_text = res.content.decode("utf-8")
-                # Clean timestamps and headers
-                if "## Transcript" in raw_text:
-                    raw_text = raw_text.split("## Transcript", 1)[1]
-                # Remove timestamps like [0:02]
-                cleaned = re.sub(r'\[\d+:\d+(?::\d+)?\]', '', raw_text)
-                lines = [line.strip() for line in cleaned.split("\n") if line.strip()]
-                full_text = " ".join(lines)
-                if full_text.strip():
-                    logger.info("Successfully fetched transcript from fallback service")
-                    return full_text
-        except Exception as fallback_exc:
-            logger.error("Fallback transcript service failed: %s", fallback_exc)
 
-        raise ValueError(
-            "Could not extract transcript from YouTube video. Please ensure the link is correct."
-        )
+        snippets = transcript.fetch()
+        full_text = " ".join([
+            getattr(s, 'text', '') if not isinstance(s, dict) else s.get('text', '')
+            for s in snippets
+        ])
+        if full_text.strip():
+            return full_text
+    except Exception as exc:
+        logger.warning("youtube-transcript-api failed: %s. Trying cloud fallbacks...", exc)
+
+    # ── Method 2: supadata.ai (works from cloud IPs) ─────────────────────────
+    try:
+        headers = {"Accept": "application/json", "User-Agent": "Mozilla/5.0"}
+        url = f"https://api.supadata.ai/v1/youtube/transcript?videoId={video_id}&text=true"
+        res = requests.get(url, headers=headers, timeout=20)
+        if res.status_code == 200:
+            data = res.json()
+            text = data.get("content") or data.get("transcript") or ""
+            if isinstance(text, list):
+                text = " ".join([item.get("text", "") for item in text if isinstance(item, dict)])
+            if text.strip():
+                logger.info("Transcript fetched via supadata.ai")
+                return text.strip()
+    except Exception as e:
+        logger.warning("supadata.ai fallback failed: %s", e)
+
+    # ── Method 3: youtubetranscript.com ──────────────────────────────────────
+    try:
+        url = f"https://www.youtubetranscript.com/?server_vid2={video_id}"
+        headers = {"User-Agent": "Mozilla/5.0", "Accept": "text/html"}
+        res = requests.get(url, headers=headers, timeout=20)
+        if res.status_code == 200 and res.text:
+            # Extract text from <text> XML-like tags
+            texts = re.findall(r'<text[^>]*>(.*?)</text>', res.text, re.DOTALL)
+            if texts:
+                import html as html_lib
+                full_text = " ".join(html_lib.unescape(t.strip()) for t in texts if t.strip())
+                if full_text.strip():
+                    logger.info("Transcript fetched via youtubetranscript.com")
+                    return full_text
+    except Exception as e:
+        logger.warning("youtubetranscript.com fallback failed: %s", e)
+
+    # ── Method 4: youtube-transcript.ai ──────────────────────────────────────
+    try:
+        url = f"https://youtube-transcript.ai/transcript/{video_id}.txt"
+        res = requests.get(url, timeout=15)
+        if res.status_code == 200 and res.text:
+            raw_text = res.content.decode("utf-8")
+            if "## Transcript" in raw_text:
+                raw_text = raw_text.split("## Transcript", 1)[1]
+            cleaned = re.sub(r'\[\d+:\d+(?::\d+)?\]', '', raw_text)
+            lines = [line.strip() for line in cleaned.split("\n") if line.strip()]
+            full_text = " ".join(lines)
+            if full_text.strip():
+                logger.info("Transcript fetched via youtube-transcript.ai")
+                return full_text
+    except Exception as e:
+        logger.warning("youtube-transcript.ai fallback failed: %s", e)
+
+    raise ValueError(
+        "Could not extract transcript from YouTube video. "
+        "This usually happens when the video has no captions or the video is private. "
+        "Please try a different video."
+    )
 
 
 def build_fallback_summary(video_title: str, transcript_text: str) -> Dict[str, Any]:
