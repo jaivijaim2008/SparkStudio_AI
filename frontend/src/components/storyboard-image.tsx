@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Sparkles } from 'lucide-react';
-import { apiUrl } from '@/lib/api-config';
+import { apiUrl } from '@/lib/api';
 
 interface StoryboardImageProps {
   prompt: string;
