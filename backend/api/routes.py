@@ -42,8 +42,7 @@ async def create_project(project_input: ProjectInput):
     }
     fake_db[project_id] = project_data
     
-    user_email = project_input.user_email
-    if supabase and user_email:
+    if supabase:
         try:
             supabase.table("projects").upsert({
                 "id": project_id,
@@ -52,6 +51,7 @@ async def create_project(project_input: ProjectInput):
             }).execute()
         except Exception as e:
             logger.warning(f"Failed to insert project into Supabase: {e}")
+
             
     return {"project_id": project_id}
 
@@ -106,6 +106,12 @@ async def run_pipeline_in_background(project_id: str, project_input: ProjectInpu
                 if "events" not in fake_db[project_id]:
                     fake_db[project_id]["events"] = []
                 fake_db[project_id]["events"].append(error_event)
+            if supabase:
+                try:
+                    supabase.table("projects").update({"status": "failed"}).eq("id", project_id).execute()
+                except Exception as db_err:
+                    logger.warning(f"Failed to update failed status in Supabase: {db_err}")
+
             for q in list(active_queues[project_id]):
                 await q.put(error_event)
         finally:

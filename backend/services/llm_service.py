@@ -349,7 +349,7 @@ class LLMService:
             "max_tokens": 4096,
         }
 
-        # Try every key in the pool before giving up
+        # Try every key in the pool before giving up, with a sleep retry on 429
         for attempt in range(self._groq_rotator.key_count + 1):
             api_key = await self._groq_rotator.get_available_key()
             headers = {
@@ -357,24 +357,41 @@ class LLMService:
                 "Content-Type": "application/json",
             }
             logger.debug("Groq request → model=%s key=...%s", model_name, api_key[-8:])
-            try:
-                response = await self._client.post(url, json=payload, headers=headers, timeout=self.timeout)
-                if response.status_code == 429:
-                    retry_after = float(response.headers.get("retry-after", 60))
-                    await self._groq_rotator.mark_rate_limited(api_key, retry_after)
-                    logger.warning("Key ...%s rate limited, rotating to next key.", api_key[-8:])
-                    continue  # immediately try next key
-                response.raise_for_status()
-                data = response.json()
-                return data["choices"][0]["message"]["content"]
-            except httpx.HTTPStatusError as exc:
-                if exc.response.status_code == 429:
-                    retry_after = float(exc.response.headers.get("retry-after", 60))
-                    await self._groq_rotator.mark_rate_limited(api_key, retry_after)
-                    continue
-                raise
+            
+            success = False
+            content = ""
+            for retry_slot in range(3):
+                try:
+                    response = await self._client.post(url, json=payload, headers=headers, timeout=self.timeout)
+                    if response.status_code == 429:
+                        retry_after = float(response.headers.get("retry-after", 3.0))
+                        sleep_time = min(retry_after, 4.0)
+                        logger.warning("Groq rate limited (429). Sleeping for %.1fs (retry %d/3)...", sleep_time, retry_slot + 1)
+                        await asyncio.sleep(sleep_time)
+                        continue
+                    response.raise_for_status()
+                    data = response.json()
+                    content = data["choices"][0]["message"]["content"]
+                    success = True
+                    break
+                except httpx.HTTPStatusError as exc:
+                    if exc.response.status_code == 429:
+                        retry_after = float(exc.response.headers.get("retry-after", 3.0))
+                        sleep_time = min(retry_after, 4.0)
+                        logger.warning("Groq rate limited (429). Sleeping for %.1fs (retry %d/3)...", sleep_time, retry_slot + 1)
+                        await asyncio.sleep(sleep_time)
+                        continue
+                    raise
+            
+            if success:
+                return content
+                
+            # If all retries failed, mark this key as rate-limited and rotate
+            await self._groq_rotator.mark_rate_limited(api_key, 60.0)
+            logger.warning("Key ...%s rate limited after retries, rotating to next key.", api_key[-8:])
 
         raise RuntimeError("All Groq API keys are rate-limited. Try again in a minute.")
+
 
 
     # ── OpenRouter ───────────────────────────────────────────────────────
