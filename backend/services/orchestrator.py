@@ -79,13 +79,17 @@ class PipelineOrchestrator:
 
         # Cloud Supabase backup (upsert)
         if self.supabase:
-            try:
-                # We store the entire JSON under the project ID
-                data_payload = {"id": project_id, key: result}
-                self.supabase.table("projects").upsert(data_payload).execute()
-            except Exception as e:
-                logger.warning(f"Failed to backup to Supabase: {e}")
-
+            user_email = None
+            if self._db is not None and project_id in self._db:
+                user_email = self._db[project_id].get("input", {}).get("user_email")
+            
+            if user_email:
+                try:
+                    # We store the entire JSON under the project ID
+                    data_payload = {"id": project_id, key: result}
+                    self.supabase.table("projects").upsert(data_payload).execute()
+                except Exception as e:
+                    logger.warning(f"Failed to backup to Supabase: {e}")
 
     async def run_pipeline(
         self,
@@ -122,9 +126,6 @@ class PipelineOrchestrator:
             except Exception as e:
                 logger.error(f"Error in {agent.agent_name}: {str(e)}")
                 yield json.dumps({'agent': agent.agent_name, 'status': 'error', 'data': {}, 'error_message': str(e)})
-                if agent.agent_name in ['research', 'script']:
-                    raise e
-
 
         # Phase 2: Sequential to respect Groq rate limits (Storyboard, Thumbnail, SEO, Subtitle, Voice)
         middle_agents = self.agents[2:7]
@@ -156,10 +157,14 @@ class PipelineOrchestrator:
             self._db[project_id]["status"] = "completed"
             
         if self.supabase:
-            try:
-                self.supabase.table("projects").upsert({"id": project_id, "status": "completed"}).execute()
-            except Exception as e:
-                logger.warning(f"Failed to mark completed in Supabase: {e}")
-
+            user_email = None
+            if self._db is not None and project_id in self._db:
+                user_email = self._db[project_id].get("input", {}).get("user_email")
+            
+            if user_email:
+                try:
+                    self.supabase.table("projects").upsert({"id": project_id, "status": "completed"}).execute()
+                except Exception as e:
+                    logger.warning(f"Failed to mark completed in Supabase: {e}")
 
         yield json.dumps({'agent': 'pipeline', 'status': 'finished', 'project_id': project_id})

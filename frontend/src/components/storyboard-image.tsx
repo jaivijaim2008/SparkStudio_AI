@@ -2,182 +2,180 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, RefreshCw } from 'lucide-react';
-import { apiUrl } from '@/lib/api';
+import { RefreshCw, Image as ImageIcon, Clock } from 'lucide-react';
 
 interface StoryboardImageProps {
   prompt: string;
   sceneNumber: number;
   alt: string;
   className?: string;
-  preloadedUrl?: string;
   shouldLoad?: boolean;
   onLoadComplete?: () => void;
   onLoadError?: () => void;
 }
 
-export function StoryboardImage({
-  prompt,
-  sceneNumber,
-  alt,
+export function StoryboardImage({ 
+  prompt, 
+  sceneNumber, 
+  alt, 
   className = "",
-  preloadedUrl = "",
   shouldLoad = true,
   onLoadComplete = () => {},
   onLoadError = () => {}
 }: StoryboardImageProps) {
   const [src, setSrc] = useState('');
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const [attempt, setAttempt] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const cleanPrompt = (text: string): string => {
-    if (!text) return 'cinematic 8k digital artwork';
-    let clean = text.replace(/\[.*?\]/g, ' ');
-    clean = clean.replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b/gi, ' ');
-    return clean.replace(/["']/g, '').replace(/[\n\r]/g, ' ').trim().substring(0, 200);
-  };
-
+  // Set early error state if prompt is completely missing
   useEffect(() => {
-    if (!prompt && !preloadedUrl) {
-      setHasError(true);
+    if (!prompt) {
+      setError(true);
+      setLoading(false);
       onLoadError();
-      return;
     }
+  }, [prompt]);
 
-    if (!shouldLoad) return;
+  // Re-generate URL when prompt, retryCount, or shouldLoad changes
+  useEffect(() => {
+    if (!shouldLoad || !prompt) return;
 
-    setImageLoaded(false);
-    setHasError(false);
+    setLoading(true);
+    setError(false);
 
-    const cleanedText = cleanPrompt(prompt);
-    const encoded = encodeURIComponent(cleanedText + ' cinematic 8k photorealistic');
-    const seed = (sceneNumber * 10007) + (attempt * 31);
-    const fallbackAiUrl = `https://image.pollinations.ai/prompt/${encoded}?width=480&height=270&nologo=true&seed=${seed}`;
+    // Sanitize prompt for Pollinations AI (remove newlines, double quotes, and clean special characters)
+    const sanitizedPrompt = prompt
+      .replace(/[\n\r]+/g, ' ')
+      .replace(/["']/g, '')
+      .replace(/[^\w\s,.?-]/g, '')
+      .trim();
 
-    if (attempt === 1) {
-      fetch(apiUrl('/api/image/generate'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, scene_number: sceneNumber }),
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data?.image_url) {
-            setSrc(data.image_url);
-          } else {
-            setSrc(fallbackAiUrl);
-          }
-        })
-        .catch(() => {
-          setSrc(fallbackAiUrl);
-        });
-    } else {
-      setSrc(fallbackAiUrl);
-    }
-  }, [prompt, preloadedUrl, sceneNumber, attempt, shouldLoad]);
+    const encodedPrompt = encodeURIComponent(sanitizedPrompt.substring(0, 450));
+    const seed = (sceneNumber * 1337) + (retryCount * 42);
+    const cacheBuster = retryCount > 0 ? `&r=${retryCount}` : '';
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=turbo&seed=${seed}${cacheBuster}`;
+    
+    setSrc(url);
+  }, [prompt, sceneNumber, retryCount, shouldLoad]);
 
   const handleLoad = () => {
-    setImageLoaded(true);
-    setHasError(false);
+    setLoading(false);
+    setError(false);
     onLoadComplete();
   };
 
   const handleError = () => {
-    if (attempt < 4) {
+    if (retryCount < 5) {
+      // Silent background retry after 4 seconds to bypass rate limits
       setTimeout(() => {
-        setAttempt(prev => prev + 1);
-      }, 1200);
+        setRetryCount(prev => prev + 1);
+      }, 4000);
     } else {
-      setHasError(true);
+      setLoading(false);
+      setError(true);
       onLoadError();
     }
   };
 
-  const handleManualRefresh = (e: React.MouseEvent) => {
+  const handleManualRetry = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setImageLoaded(false);
-    setHasError(false);
-    setAttempt(prev => prev + 1);
+    setError(false);
+    setLoading(true);
+    setRetryCount(0);
   };
 
+  // The fallback is a premium abstract CSS gradient representing a digital scene
   const getGradientFallback = (num: number) => {
     const gradients = [
-      'from-purple-900/80 via-indigo-900/60 to-slate-950',
-      'from-blue-900/80 via-cyan-900/60 to-slate-950',
-      'from-violet-900/80 via-pink-900/60 to-slate-950',
-      'from-fuchsia-900/80 via-rose-900/60 to-slate-950',
-      'from-emerald-900/80 via-teal-900/60 to-slate-950',
+      'from-purple-900/60 via-indigo-900/40 to-slate-900',
+      'from-blue-900/60 via-cyan-900/40 to-slate-900',
+      'from-violet-900/60 via-pink-900/40 to-slate-900',
+      'from-fuchsia-900/60 via-rose-900/40 to-slate-900',
+      'from-emerald-900/60 via-teal-900/40 to-slate-900',
     ];
     return gradients[num % gradients.length];
   };
 
   return (
-    <div className={`relative w-full h-full bg-black/40 rounded-lg overflow-hidden border border-white/10 group ${className}`}>
-      {/* Animated Gradient Placeholder Card — shown until image successfully loads */}
+    <div className={`relative w-full h-full bg-black/40 rounded-lg overflow-hidden border border-white/5 group ${className}`}>
+      
+      {/* 1. Shimmering Loading Skeleton */}
       <AnimatePresence>
-        {!imageLoaded && !hasError && (
+        {loading && (
           <motion.div
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.3 } }}
-            className="absolute inset-0 z-20 overflow-hidden rounded-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0d0d14] p-2"
           >
-            <div className={`absolute inset-0 bg-gradient-to-br ${getGradientFallback(sceneNumber)}`} />
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center p-2">
-              <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
-              <span className="text-[9px] text-white/60 font-medium tracking-wide">
-                {attempt > 1 ? `Retrying AI Visual (${attempt})...` : 'Generating AI Scene Visual...'}
-              </span>
+            <div className="flex flex-col items-center gap-1.5 text-center">
+              {!shouldLoad ? (
+                <>
+                  <Clock className="w-4 h-4 text-purple-400/50" />
+                  <span className="text-[9px] text-white/30 font-medium">
+                    Queued...
+                  </span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
+                  <span className="text-[9px] text-white/40 font-medium animate-pulse">
+                    {retryCount > 0 ? `Generating visual (attempt ${retryCount + 1}/6)...` : 'Generating visual...'}
+                  </span>
+                </>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Actual Rendered Image — hidden until loaded to prevent browser broken image icons */}
-      {src && (
+      {/* 2. Actual Image */}
+      {src && !error && (
         <img
           src={src}
           alt={alt}
           onLoad={handleLoad}
           onError={handleError}
           className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out ${
-            imageLoaded ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            loading ? 'opacity-0' : 'opacity-100'
           }`}
-          loading="eager"
+          loading="lazy"
         />
       )}
 
-      {/* Error Fallback Card */}
-      {hasError && (
-        <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-2 text-center bg-gradient-to-br ${getGradientFallback(sceneNumber)}`}>
-          <Sparkles className="w-4 h-4 text-purple-300 mb-1" />
-          <span className="text-[9px] text-white/70 font-medium">AI Visual Cue Ready</span>
-          <button
-            onClick={handleManualRefresh}
-            className="mt-1.5 flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 text-[8px] font-medium text-white transition-all shadow-md active:scale-95"
+      {/* 3. Space-Efficient Gradient Fallback for Load Error */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className={`absolute inset-0 z-10 flex flex-col items-center justify-center p-2 text-center bg-gradient-to-br ${getGradientFallback(
+              sceneNumber
+            )}`}
           >
-            <RefreshCw className="w-2.5 h-2.5" />
-            Generate Scene Visual
-          </button>
-        </div>
-      )}
+            <p className="text-[10px] font-semibold text-white/95 leading-none">Visual Generation Timeout</p>
+            <p className="text-[8px] text-white/45 max-w-[150px] mt-1 leading-snug">
+              AI server is busy.
+            </p>
+            
+            <button
+              onClick={handleManualRetry}
+              className="mt-2 flex items-center gap-1 px-2 py-0.5 rounded bg-white/10 border border-white/15 hover:bg-white/20 active:scale-95 text-[9px] font-medium text-white transition-all shadow-md"
+            >
+              <RefreshCw className="w-2.5 h-2.5" />
+              Retry Scene
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Scene number tag */}
-      <div className="absolute top-2 left-2 z-10 px-2 py-0.5 bg-black/70 backdrop-blur-md rounded-md text-[10px] font-bold text-white/90 border border-white/10 shadow-lg flex items-center gap-1.5">
-        <span>Scene {sceneNumber}</span>
+      <div className="absolute top-2 left-2 z-10 px-1.5 py-0.5 bg-black/60 backdrop-blur-md rounded text-[10px] font-semibold border border-white/10 shadow-lg">
+        Scene {sceneNumber}
       </div>
 
-      {/* Hover Refresh Button */}
-      {imageLoaded && (
-        <button
-          onClick={handleManualRefresh}
-          className="absolute bottom-2 right-2 z-10 p-1.5 rounded-full bg-black/60 hover:bg-black/90 backdrop-blur-md border border-white/15 opacity-0 group-hover:opacity-100 transition-opacity text-white shadow-lg"
-          title="Regenerate AI Scene Visual"
-        >
-          <RefreshCw className="w-3 h-3" />
-        </button>
-      )}
     </div>
   );
 }

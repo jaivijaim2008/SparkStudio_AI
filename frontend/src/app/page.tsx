@@ -320,13 +320,29 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-outfit font-bold tracking-tight mb-6 leading-[1.15]"
+          className="text-5xl md:text-7xl font-outfit font-bold tracking-tight mb-6 leading-[1.15] flex flex-col items-center gap-1.5 text-center"
         >
-          <span className="text-slate-900 dark:text-white">One Prompt.</span> <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#d8b4fe] via-[#a855f7] to-[#818cf8]">
+          <span className="text-slate-900 dark:text-white">
+            One Prompt.
+          </span>
+          <span
+            style={{
+              background: 'linear-gradient(to right, #c084fc, #a78bfa, #60a5fa)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              display: 'inline-block'
+            }}
+          >
             Complete Content
-          </span> <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#38bdf8] via-[#00f2fe] to-[#06b6d4]">
+          </span>
+          <span
+            style={{
+              background: 'linear-gradient(to right, #38bdf8, #0ea5e9, #00f2fe)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              display: 'inline-block'
+            }}
+          >
             Production.
           </span>
         </motion.h1>

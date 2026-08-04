@@ -47,40 +47,30 @@ export default function ProjectResultPage() {
     }
   }, [projectData]);
 
-  const scheduledIndexRef = useRef<Set<number>>(new Set());
+  const scheduledIndexRef = useRef<number | null>(null);
 
-  // Strict sequential queue: loads exactly 1 image at a time
-  // Starts the next image ONLY after the current one finishes (completed or failed)
+  // Queue coordinator: stagger image requests by 3000ms to prevent Pollinations rate limiting
   useEffect(() => {
     if (imageStatuses.length === 0) return;
-
-    // Check if any image is currently loading
-    const activeCount = imageStatuses.filter(s => s === 'loading').length;
-    if (activeCount >= 1) return;
-
-    // Find the first pending image index
-    const firstPendingIdx = imageStatuses.findIndex(s => s === 'pending');
-    if (firstPendingIdx === -1) return;
-
-    if (scheduledIndexRef.current.has(firstPendingIdx)) return;
-
-    scheduledIndexRef.current.add(firstPendingIdx);
-    const t = setTimeout(() => {
-      setImageStatuses(prev => {
-        if (prev[firstPendingIdx] !== 'pending') return prev;
-        const next = [...prev];
-        next[firstPendingIdx] = 'loading';
-        return next;
-      });
-      scheduledIndexRef.current.delete(firstPendingIdx);
-    }, 400);
-
-    return () => {
-      clearTimeout(t);
-      scheduledIndexRef.current.delete(firstPendingIdx);
-    };
+    
+    const nextIdx = imageStatuses.findIndex(s => s === 'pending');
+    if (nextIdx !== -1 && scheduledIndexRef.current !== nextIdx) {
+      scheduledIndexRef.current = nextIdx;
+      const timer = setTimeout(() => {
+        setImageStatuses(prev => {
+          const next = [...prev];
+          next[nextIdx] = 'loading';
+          return next;
+        });
+        scheduledIndexRef.current = null;
+      }, 3000); // 3000ms spacing between triggers
+      
+      return () => {
+        clearTimeout(timer);
+        scheduledIndexRef.current = null;
+      };
+    }
   }, [imageStatuses]);
-
 
   // Elapsed timer
   useEffect(() => {
@@ -170,82 +160,15 @@ export default function ProjectResultPage() {
   ];
 
   // Helper to safely get nested data
-  const getScript = () => {
-    const raw = projectData?.script?.full_script || '';
-    // Strip markdown code fences if LLM wrapped the script in ```json ... ```
-    const stripped = raw
-      .replace(/^```[\w]*\n?/gm, '')   // remove opening fences
-      .replace(/^```\s*$/gm, '')        // remove closing fences
-      .trim();
-    // If what remains looks like a JSON object, it's malformed — try to extract full_script from it
-    if (stripped.startsWith('{') && stripped.includes('"full_script"')) {
-      try {
-        const parsed = JSON.parse(stripped);
-        return parsed.full_script || stripped;
-      } catch { return stripped; }
-    }
-    return stripped;
-  };
+  const getScript = () => projectData?.script?.full_script || '';
   const getScriptSections = () => projectData?.script?.sections || [];
-
   const getScenes = () => projectData?.storyboard?.scenes || [];
-  
-  const getSeoTitle = () => {
-    if (projectData?.seo?.title) return projectData.seo.title;
-    if (status === 'completed') return `Mastering ${projectData?.input?.topic || 'SparkStudio'}!`;
-    return 'Generating...';
-  };
-
-  const getSeoDescription = () => {
-    if (projectData?.seo?.description) return projectData.seo.description;
-    if (status === 'completed') return `A complete guide and walkthrough on ${projectData?.input?.topic || 'SparkStudio'}. Learn key tips, tools, and tricks.`;
-    return 'Generating...';
-  };
-
-  const getSeoTags = () => {
-    if (projectData?.seo?.tags?.length) return projectData.seo.tags;
-    if (projectData?.seo?.keywords?.length) return projectData.seo.keywords;
-    if (status === 'completed') return [projectData?.input?.topic || 'SparkStudio', 'guide', 'tutorial', 'learning'];
-    return [];
-  };
-
-  const getSeoHashtags = () => {
-    if (projectData?.seo?.hashtags?.length) return projectData.seo.hashtags;
-    if (status === 'completed') {
-      const topicSlug = (projectData?.input?.topic || 'SparkStudio').replace(/\s+/g, '');
-      return [`#${topicSlug}`, '#learning', '#tutorial', '#guide'];
-    }
-    return [];
-  };
-
-  const getVoice = () => {
-    if (projectData?.voice?.narration_script) return projectData.voice;
-    if (status === 'completed') {
-      return {
-        narration_script: getScript() || "Welcome to SparkStudio! Let's explore this topic together.",
-        speaking_speed: "Medium",
-        pauses: ["Short pause after introduction"]
-      };
-    }
-    return {};
-  };
-
-  const getQuality = () => {
-    if (projectData?.quality?.overall_score !== undefined) return projectData.quality;
-    if (status === 'completed') {
-      return {
-        overall_score: 85,
-        metrics: [
-          { name: "Hook Strength", score: 85, details: "Engaging hook." },
-          { name: "Retention Pacing", score: 85, details: "Smooth pacing." }
-        ],
-        suggestions: ["Excellent overall flow."],
-        improvements: []
-      };
-    }
-    return {};
-  };
-
+  const getSeoTitle = () => projectData?.seo?.title || 'Generating...';
+  const getSeoDescription = () => projectData?.seo?.description || '';
+  const getSeoTags = () => projectData?.seo?.tags || [];
+  const getSeoHashtags = () => projectData?.seo?.hashtags || [];
+  const getVoice = () => projectData?.voice || {};
+  const getQuality = () => projectData?.quality || {};
   const getResearch = () => projectData?.research || {};
 
   const handleDownload = () => {
@@ -601,14 +524,7 @@ export default function ProjectResultPage() {
                         prompt={scene.image_prompt || scene.visual_description}
                         sceneNumber={scene.scene_number || idx + 1}
                         alt={`Scene ${scene.scene_number || idx + 1}`}
-                        preloadedUrl={scene.image_url || ''}
-                        shouldLoad={
-                          activeTab === 'storyboard' && (
-                            idx === 0 || 
-                            imageStatuses[idx - 1] === 'completed' || 
-                            imageStatuses[idx - 1] === 'failed'
-                          )
-                        }
+                        shouldLoad={imageStatuses[idx] === 'loading' || imageStatuses[idx] === 'completed' || imageStatuses[idx] === 'failed'}
                         onLoadComplete={() => {
                           setImageStatuses(prev => {
                             const next = [...prev];
@@ -624,7 +540,6 @@ export default function ProjectResultPage() {
                           });
                         }}
                       />
-
                     </div>
                     <div className="flex-1 space-y-2">
                       <h4 className="font-bold">Visual Description</h4>

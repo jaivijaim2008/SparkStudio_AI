@@ -110,7 +110,6 @@ class StoryboardScene(BaseModel):
     image_prompt: str = Field(default="", description="AI-image-generator prompt for this scene")
     broll_suggestions: list[str] = Field(default_factory=list, description="Suggested B-roll clips")
     transition: str = Field(default="cut", description="Transition to the next scene")
-    image_url: str = Field(default="", description="Pre-generated Pollinations image URL (cached by backend)")
 
 
 class StoryboardOutput(BaseModel):

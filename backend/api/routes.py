@@ -42,7 +42,8 @@ async def create_project(project_input: ProjectInput):
     }
     fake_db[project_id] = project_data
     
-    if supabase:
+    user_email = project_input.user_email
+    if supabase and user_email:
         try:
             supabase.table("projects").upsert({
                 "id": project_id,
@@ -51,7 +52,6 @@ async def create_project(project_input: ProjectInput):
             }).execute()
         except Exception as e:
             logger.warning(f"Failed to insert project into Supabase: {e}")
-
             
     return {"project_id": project_id}
 
@@ -106,12 +106,6 @@ async def run_pipeline_in_background(project_id: str, project_input: ProjectInpu
                 if "events" not in fake_db[project_id]:
                     fake_db[project_id]["events"] = []
                 fake_db[project_id]["events"].append(error_event)
-            if supabase:
-                try:
-                    supabase.table("projects").update({"status": "failed"}).eq("id", project_id).execute()
-                except Exception as db_err:
-                    logger.warning(f"Failed to update failed status in Supabase: {db_err}")
-
             for q in list(active_queues[project_id]):
                 await q.put(error_event)
         finally:
@@ -746,70 +740,3 @@ async def razorpay_webhook(request: Request):
                 logger.error(f"Webhook plan upgrade failed: {e}")
 
     return {"status": "ok"}
-
-
-class ImageGenerateRequest(BaseModel):
-    prompt: str
-    scene_number: int = 1
-
-@router.post("/image/generate")
-async def generate_scene_image(body: ImageGenerateRequest):
-    """
-    Generate high-adherence AI image matching the scene content.
-    Supports Hugging Face FLUX.1-schnell, Pollinations FLUX, and AI Horde.
-    """
-    import urllib.parse
-    import re
-    import httpx
-
-    raw_prompt = body.prompt or ''
-    clean = re.sub(r'\[.*?\]', '', raw_prompt)
-    clean = re.sub(r'\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b', '', clean, flags=re.IGNORECASE)
-    clean = re.sub(r'\s+', ' ', clean).strip()[:300]
-
-    if not clean:
-        clean = f"cinematic film scene {body.scene_number}"
-
-    enhanced_prompt = f"{clean}, cinematic photorealistic 8k, movie scene stills, vivid details"
-
-    # Option 1: Cloudflare Workers AI (if configured)
-    cf_account = getattr(settings, "CLOUDFLARE_ACCOUNT_ID", "")
-    cf_token = getattr(settings, "CLOUDFLARE_API_TOKEN", "")
-    if cf_account and cf_token:
-        try:
-            cf_url = f"https://api.cloudflare.com/client/v4/accounts/{cf_account}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning"
-            headers = {"Authorization": f"Bearer {cf_token}", "Content-Type": "application/json"}
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                res = await client.post(cf_url, headers=headers, json={"prompt": enhanced_prompt})
-                if res.status_code == 200:
-                    import base64
-                    # Cloudflare returns binary image bytes directly.
-                    b64_img = base64.b64encode(res.content).decode("utf-8")
-                    return {"status": "success", "image_url": f"data:image/png;base64,{b64_img}", "source": "cloudflare_workers_ai"}
-                else:
-                    logger.warning(f"Cloudflare returned non-200 code {res.status_code}: {res.text}")
-        except Exception as e:
-            logger.warning(f"Cloudflare Workers AI generation failed for scene {body.scene_number}: {e}")
-
-
-    # Option 2: Hugging Face Inference API (if HF_TOKEN is configured)
-    hf_token = getattr(settings, "HF_TOKEN", "")
-    if hf_token:
-        try:
-            hf_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
-            headers = {"Authorization": f"Bearer {hf_token}"}
-            async with httpx.AsyncClient(timeout=8.0) as client:
-                res = await client.post(hf_url, headers=headers, json={"inputs": enhanced_prompt})
-                if res.status_code == 200:
-                    import base64
-                    b64_img = base64.b64encode(res.content).decode("utf-8")
-                    return {"status": "success", "image_url": f"data:image/jpeg;base64,{b64_img}", "source": "huggingface_flux"}
-        except Exception as e:
-            logger.warning(f"HuggingFace FLUX generation failed for scene {body.scene_number}: {e}")
-
-    # Option 3: Pollinations FLUX Model
-    encoded = urllib.parse.quote(enhanced_prompt)
-    seed = (body.scene_number * 10007) + (abs(hash(clean)) % 50000)
-    pol_url = f"https://image.pollinations.ai/prompt/{encoded}?width=480&height=270&nologo=true&model=flux&seed={seed}"
-
-    return {"status": "success", "image_url": pol_url, "source": "pollinations_flux"}
