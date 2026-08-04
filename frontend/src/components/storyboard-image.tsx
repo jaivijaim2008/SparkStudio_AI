@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Sparkles } from 'lucide-react';
 
+declare global {
+  interface Window {
+    puter?: any;
+  }
+}
+
 interface StoryboardImageProps {
   prompt: string;
   sceneNumber: number;
@@ -30,7 +36,7 @@ export function StoryboardImage({
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(1);
 
-  const extractCleanPrompt = (text: string): str => {
+  const extractCleanPrompt = (text: string): string => {
     if (!text) return 'digital art cinematic broadcast studio';
     let clean = text.replace(/\[.*?\]/g, ' ');
     clean = clean.replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b/gi, ' ');
@@ -65,19 +71,33 @@ export function StoryboardImage({
     const clean = extractCleanPrompt(prompt);
     const tags = extractSubjectTags(prompt);
     const seed = (sceneNumber * 1337) + (attempt * 42);
+    const polUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(clean)}?width=480&height=270&nologo=true&model=turbo&seed=${seed}`;
 
     if (attempt === 1) {
-      // Primary: Pollinations AI Generation
-      const polUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(clean)}?width=480&height=270&nologo=true&model=turbo&seed=${seed}`;
-      setSrc(polUrl);
+      // Primary: Puter.js AI Text-to-Image (Free, Unlimited, Browser-Native AI generation)
+      if (typeof window !== 'undefined' && window.puter?.ai?.txt2img) {
+        window.puter.ai.txt2img(clean)
+          .then((imgElement: any) => {
+            const url = imgElement?.src || (typeof imgElement === 'string' ? imgElement : '');
+            if (url) {
+              setSrc(url);
+            } else {
+              setSrc(polUrl);
+            }
+          })
+          .catch(() => {
+            setSrc(polUrl);
+          });
+      } else {
+        setSrc(polUrl);
+      }
     } else if (attempt === 2) {
-      // Secondary: Topic Tag Match via LoremFlickr (Guaranteed <300ms load matching exact scene topic)
+      // Secondary: Pollinations AI Turbo Generation
+      setSrc(polUrl);
+    } else {
+      // Fallback: Scene Topic Match via LoremFlickr
       const topicUrl = `https://loremflickr.com/480/270/${encodeURIComponent(tags)}?random=${sceneNumber}`;
       setSrc(topicUrl);
-    } else {
-      // Final Fallback: Direct Pollinations simplified prompt
-      const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(tags + ' cinematic art')}?width=480&height=270&nologo=true&seed=${seed}`;
-      setSrc(fallbackUrl);
     }
   }, [prompt, preloadedUrl, sceneNumber, attempt, shouldLoad]);
 
@@ -89,7 +109,6 @@ export function StoryboardImage({
 
   const handleError = () => {
     if (attempt < 3) {
-      // Instantly switch to next source on image error
       setAttempt(prev => prev + 1);
     } else {
       setLoading(false);
@@ -131,7 +150,7 @@ export function StoryboardImage({
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center p-2">
               <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
               <span className="text-[9px] text-white/60 font-medium tracking-wide">
-                Rendering Scene {sceneNumber}...
+                Rendering Puter.js AI Art...
               </span>
             </div>
           </motion.div>

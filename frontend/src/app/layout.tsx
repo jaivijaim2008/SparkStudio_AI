@@ -36,6 +36,8 @@ export default function RootLayout({
             <ThemeToaster />
           </ReactQueryProvider>
         </ThemeProvider>
+        <script src="https://js.puter.com/v2/" async />
+
       </body>
     </html>
   );
