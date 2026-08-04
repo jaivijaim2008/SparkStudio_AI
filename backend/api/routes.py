@@ -766,7 +766,23 @@ async def generate_scene_image(body: ImageGenerateRequest):
 
     enhanced_prompt = f"{clean}, cinematic photorealistic 8k, movie scene stills, vivid details"
 
-    # Option 1: Hugging Face Inference API (if HF_TOKEN is configured)
+    # Option 1: Cloudflare Workers AI (if configured)
+    cf_account = getattr(settings, "CLOUDFLARE_ACCOUNT_ID", "")
+    cf_token = getattr(settings, "CLOUDFLARE_API_TOKEN", "")
+    if cf_account and cf_token:
+        try:
+            cf_url = f"https://api.cloudflare.com/client/v4/accounts/{cf_account}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning"
+            headers = {"Authorization": f"Bearer {cf_token}", "Content-Type": "application/json"}
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                res = await client.post(cf_url, headers=headers, json={"prompt": enhanced_prompt})
+                if res.status_code == 200:
+                    import base64
+                    b64_img = base64.b64encode(res.content).decode("utf-8")
+                    return {"status": "success", "image_url": f"data:image/jpeg;base64,{b64_img}", "source": "cloudflare_workers_ai"}
+        except Exception as e:
+            logger.warning(f"Cloudflare Workers AI generation failed for scene {body.scene_number}: {e}")
+
+    # Option 2: Hugging Face Inference API (if HF_TOKEN is configured)
     hf_token = getattr(settings, "HF_TOKEN", "")
     if hf_token:
         try:
@@ -781,7 +797,7 @@ async def generate_scene_image(body: ImageGenerateRequest):
         except Exception as e:
             logger.warning(f"HuggingFace FLUX generation failed for scene {body.scene_number}: {e}")
 
-    # Option 2: Pollinations FLUX Model
+    # Option 3: Pollinations FLUX Model
     encoded = urllib.parse.quote(enhanced_prompt)
     seed = (body.scene_number * 10007) + (abs(hash(clean)) % 50000)
     pol_url = f"https://image.pollinations.ai/prompt/{encoded}?width=480&height=270&nologo=true&model=flux&seed={seed}"
