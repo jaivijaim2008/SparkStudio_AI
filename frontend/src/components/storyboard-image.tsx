@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Sparkles } from 'lucide-react';
 
@@ -28,21 +28,19 @@ export function StoryboardImage({
   const [src, setSrc] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
+  const [fallbackTriggered, setFallbackTriggered] = useState(false);
+  const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const extractCleanKeywords = (text: string): string => {
     if (!text) return 'digital art cinematic';
-    // Remove brackets like [B-ROLL: ...] or [SFX: ...]
     let clean = text.replace(/\[.*?\]/g, ' ');
-    // Remove technical camera terms
     clean = clean.replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b/gi, ' ');
-    // Keep alpha-numeric words longer than 2 chars
     const words = clean
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
       .filter(w => w.length > 2 && !['the', 'and', 'with', 'that', 'this', 'for', 'from', 'into', 'over'].includes(w.toLowerCase()));
     
-    return words.slice(0, 5).join(' ') || 'cinematic digital art';
+    return words.slice(0, 4).join(' ') || 'cinematic digital art';
   };
 
   useEffect(() => {
@@ -53,71 +51,70 @@ export function StoryboardImage({
       return;
     }
 
-    // Priority 1: Backend pre-warmed / explicitly provided URL
-    if (preloadedUrl) {
-      setSrc(preloadedUrl);
-      return;
-    }
-
     if (!shouldLoad) return;
 
     setLoading(true);
     setError(false);
 
     const cleanQuery = extractCleanKeywords(prompt);
-    const encodedQuery = encodeURIComponent(cleanQuery);
+    const seed = sceneNumber * 100 + 42;
+    const instantPicsumUrl = `https://picsum.photos/seed/${seed}/480/270`;
 
-    // Priority 2: Lexica.art SD Search (Instant AI gallery matching)
-    if (retryCount === 0) {
-      fetch(`https://lexica.art/api/v1/search?q=${encodedQuery}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data?.images?.length > 0) {
-            const pick = data.images[sceneNumber % data.images.length];
-            const url = pick?.src || pick?.srcSmall;
-            if (url) {
-              setSrc(url);
-              return;
-            }
-          }
-          // Priority 3: Pollinations AI Turbo (fast custom AI rendering)
-          const polUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanQuery)}?width=480&height=270&nologo=true&model=turbo&seed=${sceneNumber * 1337}`;
-          setSrc(polUrl);
-        })
-        .catch(() => {
-          const polUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanQuery)}?width=480&height=270&nologo=true&model=turbo&seed=${sceneNumber * 1337}`;
-          setSrc(polUrl);
-        });
-    } else {
-      // Priority 4: Deterministic Unsplash CDN fallback on retry
-      const picsumUrl = `https://picsum.photos/seed/${(sceneNumber * 13) + retryCount}/480/270`;
-      setSrc(picsumUrl);
+    // 1.5s Watchdog: If current source takes >1500ms, instantly force-swap to Picsum CDN
+    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
+    watchdogTimerRef.current = setTimeout(() => {
+      setSrc(instantPicsumUrl);
+      setFallbackTriggered(true);
+    }, 1800);
+
+    if (fallbackTriggered) {
+      setSrc(instantPicsumUrl);
+      return;
     }
-  }, [prompt, preloadedUrl, sceneNumber, retryCount, shouldLoad]);
+
+    // Try Lexica AI image search first
+    const encodedQuery = encodeURIComponent(cleanQuery);
+    fetch(`https://lexica.art/api/v1/search?q=${encodedQuery}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data?.images?.length > 0) {
+          const pick = data.images[sceneNumber % data.images.length];
+          const url = pick?.src || pick?.srcSmall;
+          if (url) {
+            setSrc(url);
+            return;
+          }
+        }
+        setSrc(instantPicsumUrl);
+      })
+      .catch(() => {
+        setSrc(instantPicsumUrl);
+      });
+
+    return () => {
+      if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
+    };
+  }, [prompt, preloadedUrl, sceneNumber, shouldLoad, fallbackTriggered]);
 
   const handleLoad = () => {
+    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
     setLoading(false);
     setError(false);
     onLoadComplete();
   };
 
   const handleError = () => {
-    if (retryCount < 3) {
-      setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-      }, 500);
-    } else {
-      setLoading(false);
-      setError(true);
-      onLoadError();
-    }
+    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
+    const seed = sceneNumber * 100 + 99;
+    setSrc(`https://picsum.photos/seed/${seed}/480/270`);
+    setFallbackTriggered(true);
   };
 
   const handleManualRetry = (e: React.MouseEvent) => {
     e.stopPropagation();
     setError(false);
     setLoading(true);
-    setRetryCount(prev => prev + 1);
+    setFallbackTriggered(false);
   };
 
   const getGradientFallback = (num: number) => {
@@ -133,7 +130,7 @@ export function StoryboardImage({
 
   return (
     <div className={`relative w-full h-full bg-black/40 rounded-lg overflow-hidden border border-white/10 group ${className}`}>
-      {/* Loading Skeleton & Shimmer */}
+      {/* Loading Skeleton */}
       <AnimatePresence>
         {loading && (
           <motion.div
