@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Sparkles } from 'lucide-react';
 import { apiUrl } from '@/lib/api';
@@ -30,6 +30,13 @@ export function StoryboardImage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const extractSubjectTag = (text: string) => {
+    const clean = (text || '').replace(/\[.*?\]/g, '').replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx|the|and|with|that|this|for|from|into|over|host|scene|shot|view)\b/gi, '');
+    const words = clean.replace(/[^\w\s]/g, ' ').split(/\s+/).filter(w => w.length > 3);
+    return words.slice(0, 2).join(',') || 'cinematic';
+  };
 
   useEffect(() => {
     if (!prompt && !preloadedUrl) {
@@ -39,7 +46,7 @@ export function StoryboardImage({
       return;
     }
 
-    if (preloadedUrl) {
+    if (preloadedUrl && retryCount === 0) {
       setSrc(preloadedUrl);
       return;
     }
@@ -48,12 +55,6 @@ export function StoryboardImage({
 
     setLoading(true);
     setError(false);
-
-    const extractSubjectTag = (text: string) => {
-      const clean = (text || '').replace(/\[.*?\]/g, '').replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx|the|and|with|that|this|for|from|into|over|host|scene|shot|view)\b/gi, '');
-      const words = clean.replace(/[^\w\s]/g, ' ').split(/\s+/).filter(w => w.length > 3);
-      return words.slice(0, 2).join(',') || 'cinematic';
-    };
 
     // Call server-side API proxy (zero CORS, zero client timeouts, fast response)
     fetch(apiUrl('/api/image/generate'), {
@@ -76,14 +77,33 @@ export function StoryboardImage({
       });
   }, [prompt, preloadedUrl, sceneNumber, retryCount, shouldLoad]);
 
+  // 3.5s Watchdog: If current src takes >3.5s to load, switch to instant scene topic photo
+  useEffect(() => {
+    if (!src || !loading) return;
+
+    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
+    watchdogTimerRef.current = setTimeout(() => {
+      const tag = extractSubjectTag(prompt);
+      setSrc(`https://loremflickr.com/480/270/${encodeURIComponent(tag)}?random=${sceneNumber + retryCount}`);
+    }, 3500);
+
+    return () => {
+      if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
+    };
+  }, [src, loading, prompt, sceneNumber, retryCount]);
+
   const handleLoad = () => {
+    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
     setLoading(false);
     setError(false);
     onLoadComplete();
   };
 
   const handleError = () => {
+    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
     if (retryCount < 3) {
+      const tag = extractSubjectTag(prompt);
+      setSrc(`https://loremflickr.com/480/270/${encodeURIComponent(tag)}?random=${sceneNumber + retryCount + 10}`);
       setRetryCount(prev => prev + 1);
     } else {
       setLoading(false);
