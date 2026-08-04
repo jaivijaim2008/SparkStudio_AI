@@ -66,11 +66,12 @@ export function StoryboardImage({
   };
 
   const handleError = () => {
-    if (retryCount < 5) {
-      // Fast retry - 800ms for quick recovery
+    if (retryCount < 8) {
+      // Exponential backoff: 1s, 2s, 4s, 8s... — avoids hammering Pollinations
+      const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
       setTimeout(() => {
         setRetryCount(prev => prev + 1);
-      }, 800);
+      }, delay);
     } else {
       setLoading(false);
       setError(true);
@@ -140,7 +141,7 @@ export function StoryboardImage({
           className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out ${
             loading ? 'opacity-0' : 'opacity-100'
           }`}
-          loading="lazy"
+          loading="eager"
         />
       )}
 

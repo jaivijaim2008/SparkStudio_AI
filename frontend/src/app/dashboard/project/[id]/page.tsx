@@ -54,8 +54,8 @@ export default function ProjectResultPage() {
   useEffect(() => {
     if (imageStatuses.length === 0) return;
 
-    const CONCURRENT_LIMIT = 3;   // max simultaneous requests
-    const STAGGER_MS       = 300; // ms between each slot firing
+    const CONCURRENT_LIMIT = 2;    // 2 simultaneous keeps Pollinations happy
+    const STAGGER_MS       = 1200; // 1.2s gap avoids 429 rate limit
 
     const activeCount = imageStatuses.filter(s => s === 'loading').length;
     const pendingIdxs  = imageStatuses
