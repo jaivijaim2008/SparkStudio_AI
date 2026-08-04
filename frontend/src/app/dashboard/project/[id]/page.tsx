@@ -541,6 +541,7 @@ export default function ProjectResultPage() {
                         prompt={scene.image_prompt || scene.visual_description}
                         sceneNumber={scene.scene_number || idx + 1}
                         alt={`Scene ${scene.scene_number || idx + 1}`}
+                        preloadedUrl={scene.image_url || ''}
                         shouldLoad={imageStatuses[idx] === 'loading' || imageStatuses[idx] === 'completed' || imageStatuses[idx] === 'failed'}
                         onLoadComplete={() => {
                           setImageStatuses(prev => {
