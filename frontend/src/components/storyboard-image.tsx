@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, RefreshCw } from 'lucide-react';
 import { apiUrl } from '@/lib/api';
@@ -29,7 +29,13 @@ export function StoryboardImage({
   const [src, setSrc] = useState('');
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(1);
-  const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const cleanPrompt = (text: string): string => {
+    if (!text) return 'cinematic 8k digital artwork';
+    let clean = text.replace(/\[.*?\]/g, ' ');
+    clean = clean.replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b/gi, ' ');
+    return clean.replace(/["']/g, '').replace(/[\n\r]/g, ' ').trim().substring(0, 200);
+  };
 
   useEffect(() => {
     if (!prompt && !preloadedUrl) {
@@ -42,8 +48,12 @@ export function StoryboardImage({
 
     setLoading(true);
 
+    const cleanedText = cleanPrompt(prompt);
+    const encoded = encodeURIComponent(cleanedText + ' cinematic 8k photorealistic');
+    const seed = (sceneNumber * 10007) + (attempt * 31);
+
     if (attempt === 1) {
-      // Primary: Server-side AI Image Generator (Pollinations FLUX / HuggingFace)
+      // Primary: Server-side AI Image Generator Route
       fetch(apiUrl('/api/image/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -54,50 +64,39 @@ export function StoryboardImage({
           if (data?.image_url) {
             setSrc(data.image_url);
           } else {
-            setAttempt(2);
+            setSrc(`https://image.pollinations.ai/prompt/${encoded}?width=480&height=270&nologo=true&seed=${seed}`);
           }
         })
         .catch(() => {
-          setAttempt(2);
+          setSrc(`https://image.pollinations.ai/prompt/${encoded}?width=480&height=270&nologo=true&seed=${seed}`);
         });
     } else {
-      // Guaranteed Fallback: Deterministic Scene Seeded High-Res Image (100% Uptime, <50ms)
-      const seed = (sceneNumber * 7919) + attempt;
-      setSrc(`https://picsum.photos/seed/${seed}/480/270`);
+      // Direct Pollinations AI Fallback with simplified prompt and new seed (100% AI Generated, 0% Random Photos)
+      setSrc(`https://image.pollinations.ai/prompt/${encoded}?width=480&height=270&nologo=true&seed=${seed}`);
     }
   }, [prompt, preloadedUrl, sceneNumber, attempt, shouldLoad]);
 
-  // 3-second watchdog timer: If image takes >3s, automatically fall back to fast CDN
-  useEffect(() => {
-    if (!src || !loading) return;
-
-    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
-    watchdogTimerRef.current = setTimeout(() => {
-      if (attempt === 1) {
-        setAttempt(2);
-      }
-    }, 3000);
-
-    return () => {
-      if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
-    };
-  }, [src, loading, attempt]);
-
   const handleLoad = () => {
-    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
     setLoading(false);
     onLoadComplete();
   };
 
   const handleError = () => {
-    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
-    setAttempt(prev => prev + 1);
+    // Retry with alternate AI seed
+    if (attempt < 5) {
+      setTimeout(() => {
+        setAttempt(prev => prev + 1);
+      }, 1000);
+    } else {
+      setLoading(false);
+      onLoadError();
+    }
   };
 
   const handleManualRefresh = (e: React.MouseEvent) => {
     e.stopPropagation();
     setLoading(true);
-    setAttempt(1);
+    setAttempt(prev => prev + 1);
   };
 
   const getGradientFallback = (num: number) => {
@@ -126,7 +125,7 @@ export function StoryboardImage({
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center p-2">
               <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
               <span className="text-[9px] text-white/60 font-medium tracking-wide">
-                Rendering Scene {sceneNumber}...
+                Generating AI Scene Visual...
               </span>
             </div>
           </motion.div>
@@ -157,7 +156,7 @@ export function StoryboardImage({
         <button
           onClick={handleManualRefresh}
           className="absolute bottom-2 right-2 z-10 p-1.5 rounded-full bg-black/60 hover:bg-black/90 backdrop-blur-md border border-white/15 opacity-0 group-hover:opacity-100 transition-opacity text-white shadow-lg"
-          title="Regenerate Scene Visual"
+          title="Regenerate AI Scene Visual"
         >
           <RefreshCw className="w-3 h-3" />
         </button>
