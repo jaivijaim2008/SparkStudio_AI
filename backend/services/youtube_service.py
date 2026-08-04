@@ -303,13 +303,19 @@ async def generate_youtube_summary(
             "Invalid YouTube URL format. Please provide a valid YouTube video link (e.g., https://www.youtube.com/watch?v=...)"
         )
         
-    # 1. Fetch metadata in parallel with transcript fetching
+    # 1. Fetch metadata
     metadata = await fetch_video_metadata(client, video_id)
     video_title = metadata.get("title", "YouTube Video")
-    
-    # 2. Extract transcript
-    transcript_text = fetch_transcript(video_id)
-    
+
+    # 2. Extract transcript — gracefully fall back to metadata-only if unavailable
+    transcript_text = ""
+    transcript_available = True
+    try:
+        transcript_text = fetch_transcript(video_id)
+    except ValueError as e:
+        logger.warning("All transcript methods failed for %s: %s. Falling back to metadata-only summary.", video_id, e)
+        transcript_available = False
+
     # Truncate transcript to max ~12,000 words to stay safely within context limit
     words = transcript_text.split()
     if len(words) > 12000:
@@ -340,24 +346,35 @@ async def generate_youtube_summary(
         "(300-500 words) with subheadings explaining the concepts in detail. Use a professional, informative tone suitable for publishing.\n"
         "5. Keep the wording clear, engaging, and free of unnecessary fluff."
     )
-    
-    prompt = (
-        f"Please summarize the following YouTube video content:\n\n"
-        f"Video Title: {video_title}\n\n"
-        f"Video Transcript:\n{transcript_text}\n\n"
-        f"Generate the formatted summary now."
-    )
-    
+
+    # If no transcript was available, generate from title/metadata only
+    if not transcript_available:
+        logger.info("Generating metadata-only summary for: %s", video_title)
+        prompt = (
+            f"A YouTube video titled '{video_title}' by '{metadata.get('author_name', 'Unknown Creator')}' "
+            f"was provided but no captions/transcript were available.\n\n"
+            f"Based on the video title and creator, generate a comprehensive educational summary as if you are an expert "
+            f"on this topic. Cover what this video is likely about, key concepts a viewer would learn, and actionable takeaways.\n\n"
+            f"Generate the formatted summary now."
+        )
+    else:
+        prompt = (
+            f"Please summarize the following YouTube video content:\n\n"
+            f"Video Title: {video_title}\n\n"
+            f"Video Transcript:\n{transcript_text}\n\n"
+            f"Generate the formatted summary now."
+        )
+
     llm = LLMService(client)
     try:
         # If the transcript is long and using Groq, chunk it to avoid TPM rate limits
         words = transcript_text.split()
-        if len(words) > 1500 and settings.LLM_PROVIDER == "groq":
+        if len(words) > 1500 and settings.LLM_PROVIDER == "groq" and transcript_available:
             logger.info("Transcript exceeds 1500 words and LLM_PROVIDER is groq. Using chunk-based summarization.")
             raw_summary = await summarize_chunks(llm, transcript_text, video_title)
         else:
             raw_summary = await llm.generate(prompt=prompt, system_prompt=system_prompt)
-        
+
         # Parse bullet points for key takeaways list if possible
         takeaways = []
         for line in raw_summary.split("\n"):
