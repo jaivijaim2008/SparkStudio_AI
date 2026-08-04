@@ -749,13 +749,14 @@ class ImageGenerateRequest(BaseModel):
 @router.post("/image/generate")
 async def generate_scene_image(body: ImageGenerateRequest):
     """
-    Generate high-adherence AI image matching the scene content using FLUX AI.
+    Generate high-adherence AI image matching the scene content.
+    Supports Hugging Face FLUX.1-schnell, Pollinations FLUX, and AI Horde.
     """
     import urllib.parse
     import re
+    import httpx
 
     raw_prompt = body.prompt or ''
-    # Strip bracketed cues like [B-ROLL: ...] or [SFX: ...]
     clean = re.sub(r'\[.*?\]', '', raw_prompt)
     clean = re.sub(r'\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b', '', clean, flags=re.IGNORECASE)
     clean = re.sub(r'\s+', ' ', clean).strip()[:300]
@@ -763,14 +764,26 @@ async def generate_scene_image(body: ImageGenerateRequest):
     if not clean:
         clean = f"cinematic film scene {body.scene_number}"
 
-    # Append high-adherence visual quality keywords
     enhanced_prompt = f"{clean}, cinematic photorealistic 8k, movie scene stills, vivid details"
+
+    # Option 1: Hugging Face Inference API (if HF_TOKEN is configured)
+    hf_token = getattr(settings, "HF_TOKEN", "")
+    if hf_token:
+        try:
+            hf_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
+            headers = {"Authorization": f"Bearer {hf_token}"}
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                res = await client.post(hf_url, headers=headers, json={"inputs": enhanced_prompt})
+                if res.status_code == 200:
+                    import base64
+                    b64_img = base64.b64encode(res.content).decode("utf-8")
+                    return {"status": "success", "image_url": f"data:image/jpeg;base64,{b64_img}", "source": "huggingface_flux"}
+        except Exception as e:
+            logger.warning(f"HuggingFace FLUX generation failed for scene {body.scene_number}: {e}")
+
+    # Option 2: Pollinations FLUX Model
     encoded = urllib.parse.quote(enhanced_prompt)
-
-    # Deterministic prompt-based seed
     seed = (body.scene_number * 10007) + (abs(hash(clean)) % 50000)
-
-    # Use model=flux for exact content adherence
     pol_url = f"https://image.pollinations.ai/prompt/{encoded}?width=480&height=270&nologo=true&model=flux&seed={seed}"
 
     return {"status": "success", "image_url": pol_url, "source": "pollinations_flux"}

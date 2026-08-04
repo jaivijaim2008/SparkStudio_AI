@@ -53,6 +53,11 @@ class Settings(BaseSettings):
         description="OpenRouter API key (required when LLM_PROVIDER=openrouter)",
     )
 
+    HF_TOKEN: str = Field(
+        default="",
+        description="Hugging Face API Token for FLUX.1 image generation",
+    )
+
     # ── Supabase (optional, for future persistence) ─────────────────────
     SUPABASE_URL: str = Field(
         default="",
