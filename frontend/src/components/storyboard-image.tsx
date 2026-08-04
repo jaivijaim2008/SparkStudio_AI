@@ -108,19 +108,23 @@ export function StoryboardImage({
   return (
     <div className={`relative w-full h-full bg-black/40 rounded-lg overflow-hidden border border-white/5 group ${className}`}>
 
-      {/* Shimmering Loading Skeleton */}
+      {/* Beautiful gradient placeholder — shows instantly, fades out when image loads */}
       <AnimatePresence>
         {loading && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0d0d14] p-2"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.4 } }}
+            className="absolute inset-0 z-20 overflow-hidden rounded-lg"
           >
-            <div className="flex flex-col items-center gap-1.5 text-center">
-              <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
-              <span className="text-[9px] text-white/40 font-medium animate-pulse">
-                {preloadedUrl ? 'Loading...' : retryCount > 0 ? `Retry ${retryCount + 1}/9...` : 'Generating visual...'}
+            {/* Animated gradient background */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${getGradientFallback(sceneNumber)} animate-pulse`} />
+            {/* Shimmer sweep effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+            {/* Center icon */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+              <div className="w-6 h-6 rounded-full border-2 border-purple-400/60 border-t-purple-300 animate-spin" />
+              <span className="text-[8px] text-white/40 font-medium mt-0.5">
+                {preloadedUrl ? 'Loading...' : 'Generating...'}
               </span>
             </div>
           </motion.div>
