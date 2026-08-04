@@ -177,8 +177,24 @@ export default function ProjectResultPage() {
   ];
 
   // Helper to safely get nested data
-  const getScript = () => projectData?.script?.full_script || '';
+  const getScript = () => {
+    const raw = projectData?.script?.full_script || '';
+    // Strip markdown code fences if LLM wrapped the script in ```json ... ```
+    const stripped = raw
+      .replace(/^```[\w]*\n?/gm, '')   // remove opening fences
+      .replace(/^```\s*$/gm, '')        // remove closing fences
+      .trim();
+    // If what remains looks like a JSON object, it's malformed — try to extract full_script from it
+    if (stripped.startsWith('{') && stripped.includes('"full_script"')) {
+      try {
+        const parsed = JSON.parse(stripped);
+        return parsed.full_script || stripped;
+      } catch { return stripped; }
+    }
+    return stripped;
+  };
   const getScriptSections = () => projectData?.script?.sections || [];
+
   const getScenes = () => projectData?.storyboard?.scenes || [];
   const getSeoTitle = () => projectData?.seo?.title || 'Generating...';
   const getSeoDescription = () => projectData?.seo?.description || '';
