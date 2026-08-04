@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Image as ImageIcon } from 'lucide-react';
+import { RefreshCw, Sparkles } from 'lucide-react';
 
 interface StoryboardImageProps {
   prompt: string;
   sceneNumber: number;
   alt: string;
   className?: string;
-  preloadedUrl?: string;   // ← Backend pre-warmed URL (instant)
+  preloadedUrl?: string;
   shouldLoad?: boolean;
   onLoadComplete?: () => void;
   onLoadError?: () => void;
@@ -30,57 +30,70 @@ export function StoryboardImage({
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
-  const [lexicaUrl, setLexicaUrl] = useState('');
-  const [useFallback, setUseFallback] = useState(false); // true = skip to Picsum/Pollinations
+  const extractCleanKeywords = (text: string): string => {
+    if (!text) return 'digital art cinematic';
+    // Remove brackets like [B-ROLL: ...] or [SFX: ...]
+    let clean = text.replace(/\[.*?\]/g, ' ');
+    // Remove technical camera terms
+    clean = clean.replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b/gi, ' ');
+    // Keep alpha-numeric words longer than 2 chars
+    const words = clean
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !['the', 'and', 'with', 'that', 'this', 'for', 'from', 'into', 'over'].includes(w.toLowerCase()));
+    
+    return words.slice(0, 5).join(' ') || 'cinematic digital art';
+  };
 
-  // ── Source priority: preloadedUrl → Lexica → Picsum → Pollinations ──────
   useEffect(() => {
     if (!prompt && !preloadedUrl) {
-      setError(true); setLoading(false); onLoadError(); return;
+      setError(true);
+      setLoading(false);
+      onLoadError();
+      return;
     }
-    // 1. Backend pre-warmed URL — instant, use directly
-    if (preloadedUrl) { setSrc(preloadedUrl); return; }
+
+    // Priority 1: Backend pre-warmed / explicitly provided URL
+    if (preloadedUrl) {
+      setSrc(preloadedUrl);
+      return;
+    }
+
     if (!shouldLoad) return;
 
-    setLoading(true); setError(false);
+    setLoading(true);
+    setError(false);
 
-    const sanitized = prompt
-      .replace(/[\n\r]+/g, ' ').replace(/["']/g, '')
-      .replace(/[^\w\s,.?-]/g, '').trim();
+    const cleanQuery = extractCleanKeywords(prompt);
+    const encodedQuery = encodeURIComponent(cleanQuery);
 
-    if (!useFallback && retryCount === 0) {
-      // 2. Lexica.art — searches millions of pre-generated SD images, instant CDN
-      const q = encodeURIComponent(sanitized.substring(0, 100));
-      fetch(`https://lexica.art/api/v1/search?q=${q}`)
+    // Priority 2: Lexica.art SD Search (Instant AI gallery matching)
+    if (retryCount === 0) {
+      fetch(`https://lexica.art/api/v1/search?q=${encodedQuery}`)
         .then(r => r.json())
         .then(data => {
-          const images = data?.images;
-          if (images && images.length > 0) {
-            // Pick an image offset by scene number for variety
-            const pick = images[sceneNumber % images.length];
-            const url = pick?.src || pick?.srcSmall || '';
-            if (url) { setSrc(url); return; }
+          if (data?.images?.length > 0) {
+            const pick = data.images[sceneNumber % data.images.length];
+            const url = pick?.src || pick?.srcSmall;
+            if (url) {
+              setSrc(url);
+              return;
+            }
           }
-          // No results — fall through to Picsum
-          setUseFallback(true);
+          // Priority 3: Pollinations AI Turbo (fast custom AI rendering)
+          const polUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanQuery)}?width=480&height=270&nologo=true&model=turbo&seed=${sceneNumber * 1337}`;
+          setSrc(polUrl);
         })
-        .catch(() => setUseFallback(true));
+        .catch(() => {
+          const polUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanQuery)}?width=480&height=270&nologo=true&model=turbo&seed=${sceneNumber * 1337}`;
+          setSrc(polUrl);
+        });
     } else {
-      // 3. Picsum Photos — instant Cloudflare CDN, beautiful random photos
-      //    Deterministic seed per scene so same scene always gets same photo
-      const seed = (sceneNumber * 7 + 13) * (retryCount + 1);
-      const picsumUrl = `https://picsum.photos/seed/${seed}/480/270`;
-
-      // 4. Pollinations as final fallback (slow but AI-generated)
-      const encodedPrompt = encodeURIComponent(sanitized.substring(0, 450));
-      const polSeed = (sceneNumber * 1337) + (retryCount * 42);
-      const polUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=turbo&seed=${polSeed}`;
-
-      // Try Picsum first (instant), fallback to Pollinations on error
+      // Priority 4: Deterministic Unsplash CDN fallback on retry
+      const picsumUrl = `https://picsum.photos/seed/${(sceneNumber * 13) + retryCount}/480/270`;
       setSrc(picsumUrl);
-      setLexicaUrl(polUrl); // stored as backup if Picsum fails too
     }
-  }, [prompt, preloadedUrl, sceneNumber, retryCount, shouldLoad, useFallback]);
+  }, [prompt, preloadedUrl, sceneNumber, retryCount, shouldLoad]);
 
   const handleLoad = () => {
     setLoading(false);
@@ -89,18 +102,10 @@ export function StoryboardImage({
   };
 
   const handleError = () => {
-    // If currently showing Picsum and Pollinations URL is available, try it
-    if (lexicaUrl && src.includes('picsum')) {
-      setSrc(lexicaUrl);
-      setLexicaUrl('');
-      return;
-    }
-    if (retryCount < 5) {
-      const delay = Math.min(1000 * Math.pow(2, retryCount), 8000);
+    if (retryCount < 3) {
       setTimeout(() => {
-        setUseFallback(true);
         setRetryCount(prev => prev + 1);
-      }, delay);
+      }, 500);
     } else {
       setLoading(false);
       setError(true);
@@ -112,49 +117,43 @@ export function StoryboardImage({
     e.stopPropagation();
     setError(false);
     setLoading(true);
-    setRetryCount(0);
-    // Force re-fetch by appending timestamp
-    setSrc(src + `&_t=${Date.now()}`);
+    setRetryCount(prev => prev + 1);
   };
 
   const getGradientFallback = (num: number) => {
     const gradients = [
-      'from-purple-900/60 via-indigo-900/40 to-slate-900',
-      'from-blue-900/60 via-cyan-900/40 to-slate-900',
-      'from-violet-900/60 via-pink-900/40 to-slate-900',
-      'from-fuchsia-900/60 via-rose-900/40 to-slate-900',
-      'from-emerald-900/60 via-teal-900/40 to-slate-900',
+      'from-purple-900/80 via-indigo-900/60 to-slate-950',
+      'from-blue-900/80 via-cyan-900/60 to-slate-950',
+      'from-violet-900/80 via-pink-900/60 to-slate-950',
+      'from-fuchsia-900/80 via-rose-900/60 to-slate-950',
+      'from-emerald-900/80 via-teal-900/60 to-slate-950',
     ];
     return gradients[num % gradients.length];
   };
 
   return (
-    <div className={`relative w-full h-full bg-black/40 rounded-lg overflow-hidden border border-white/5 group ${className}`}>
-
-      {/* Beautiful gradient placeholder — shows instantly, fades out when image loads */}
+    <div className={`relative w-full h-full bg-black/40 rounded-lg overflow-hidden border border-white/10 group ${className}`}>
+      {/* Loading Skeleton & Shimmer */}
       <AnimatePresence>
         {loading && (
           <motion.div
             initial={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.4 } }}
+            exit={{ opacity: 0, transition: { duration: 0.3 } }}
             className="absolute inset-0 z-20 overflow-hidden rounded-lg"
           >
-            {/* Animated gradient background */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${getGradientFallback(sceneNumber)} animate-pulse`} />
-            {/* Shimmer sweep effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-            {/* Center icon */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-              <div className="w-6 h-6 rounded-full border-2 border-purple-400/60 border-t-purple-300 animate-spin" />
-              <span className="text-[8px] text-white/40 font-medium mt-0.5">
-                {preloadedUrl ? 'Loading...' : 'Generating...'}
+            <div className={`absolute inset-0 bg-gradient-to-br ${getGradientFallback(sceneNumber)}`} />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center p-2">
+              <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
+              <span className="text-[9px] text-white/60 font-medium tracking-wide">
+                Rendering Scene {sceneNumber}...
               </span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Actual Image */}
+      {/* Rendered Image */}
       {src && !error && (
         <img
           src={src}
@@ -168,7 +167,7 @@ export function StoryboardImage({
         />
       )}
 
-      {/* Gradient Fallback on Error */}
+      {/* Fallback Error Overlay */}
       <AnimatePresence>
         {error && (
           <motion.div
@@ -177,26 +176,23 @@ export function StoryboardImage({
             exit={{ opacity: 0 }}
             className={`absolute inset-0 z-10 flex flex-col items-center justify-center p-2 text-center bg-gradient-to-br ${getGradientFallback(sceneNumber)}`}
           >
-            <p className="text-[10px] font-semibold text-white/95 leading-none">Visual Generation Timeout</p>
-            <p className="text-[8px] text-white/45 max-w-[150px] mt-1 leading-snug">
-              AI server is busy.
-            </p>
+            <Sparkles className="w-5 h-5 text-purple-300 mb-1" />
+            <p className="text-[10px] font-semibold text-white/95 leading-none">Visual Cue Ready</p>
             <button
               onClick={handleManualRetry}
-              className="mt-2 flex items-center gap-1 px-2 py-0.5 rounded bg-white/10 border border-white/15 hover:bg-white/20 active:scale-95 text-[9px] font-medium text-white transition-all shadow-md"
+              className="mt-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 active:scale-95 text-[9px] font-medium text-white transition-all shadow-md"
             >
               <RefreshCw className="w-2.5 h-2.5" />
-              Retry Scene
+              Refresh Image
             </button>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Scene number tag */}
-      <div className="absolute top-2 left-2 z-10 px-1.5 py-0.5 bg-black/60 backdrop-blur-md rounded text-[10px] font-semibold border border-white/10 shadow-lg">
+      <div className="absolute top-2 left-2 z-10 px-2 py-0.5 bg-black/70 backdrop-blur-md rounded-md text-[10px] font-bold text-white/90 border border-white/10 shadow-lg">
         Scene {sceneNumber}
       </div>
-
     </div>
   );
 }
