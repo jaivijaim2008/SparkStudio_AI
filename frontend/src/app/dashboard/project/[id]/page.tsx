@@ -47,29 +47,46 @@ export default function ProjectResultPage() {
     }
   }, [projectData]);
 
-  const scheduledIndexRef = useRef<number | null>(null);
+  const scheduledIndexRef = useRef<Set<number>>(new Set());
 
-  // Queue coordinator: stagger image requests by 3000ms to prevent Pollinations rate limiting
+  // Fast parallel queue: load 3 images at once, staggered 300ms apart
+  // This achieves ~1 image/second instead of 1 image/3 seconds
   useEffect(() => {
     if (imageStatuses.length === 0) return;
-    
-    const nextIdx = imageStatuses.findIndex(s => s === 'pending');
-    if (nextIdx !== -1 && scheduledIndexRef.current !== nextIdx) {
-      scheduledIndexRef.current = nextIdx;
-      const timer = setTimeout(() => {
+
+    const CONCURRENT_LIMIT = 3;   // max simultaneous requests
+    const STAGGER_MS       = 300; // ms between each slot firing
+
+    const activeCount = imageStatuses.filter(s => s === 'loading').length;
+    const pendingIdxs  = imageStatuses
+      .map((s, i) => (s === 'pending' ? i : -1))
+      .filter(i => i !== -1 && !scheduledIndexRef.current.has(i));
+
+    const slotsAvailable = Math.max(0, CONCURRENT_LIMIT - activeCount);
+    const toSchedule = pendingIdxs.slice(0, slotsAvailable);
+
+    if (toSchedule.length === 0) return;
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    toSchedule.forEach((idx, slot) => {
+      scheduledIndexRef.current.add(idx);
+      const t = setTimeout(() => {
         setImageStatuses(prev => {
+          if (prev[idx] !== 'pending') return prev;
           const next = [...prev];
-          next[nextIdx] = 'loading';
+          next[idx] = 'loading';
           return next;
         });
-        scheduledIndexRef.current = null;
-      }, 3000); // 3000ms spacing between triggers
-      
-      return () => {
-        clearTimeout(timer);
-        scheduledIndexRef.current = null;
-      };
-    }
+        scheduledIndexRef.current.delete(idx);
+      }, slot * STAGGER_MS);
+      timers.push(t);
+    });
+
+    return () => {
+      timers.forEach(clearTimeout);
+      toSchedule.forEach(idx => scheduledIndexRef.current.delete(idx));
+    };
   }, [imageStatuses]);
 
   // Elapsed timer

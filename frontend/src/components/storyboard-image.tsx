@@ -67,10 +67,10 @@ export function StoryboardImage({
 
   const handleError = () => {
     if (retryCount < 5) {
-      // Silent background retry after 4 seconds to bypass rate limits
+      // Fast retry - 800ms for quick recovery
       setTimeout(() => {
         setRetryCount(prev => prev + 1);
-      }, 4000);
+      }, 800);
     } else {
       setLoading(false);
       setError(true);
