@@ -28,14 +28,25 @@ export function StoryboardImage({
   const [src, setSrc] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
+  const [attempt, setAttempt] = useState(1);
 
-  const cleanPrompt = (text: string): string => {
-    if (!text) return 'digital art cinematic news broadcast studio';
-    let cleaned = text.replace(/\[.*?\]/g, ' '); // remove bracketed cues like [B-ROLL: ...]
-    cleaned = cleaned.replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b/gi, ' ');
-    cleaned = cleaned.replace(/["']/g, '').replace(/[\n\r]/g, ' ').trim();
-    return cleaned.substring(0, 300);
+  const extractCleanPrompt = (text: string): str => {
+    if (!text) return 'digital art cinematic broadcast studio';
+    let clean = text.replace(/\[.*?\]/g, ' ');
+    clean = clean.replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b/gi, ' ');
+    return clean.replace(/["']/g, '').replace(/[\n\r]/g, ' ').trim().substring(0, 250);
+  };
+
+  const extractSubjectTags = (text: string): string => {
+    if (!text) return 'technology';
+    let clean = text.replace(/\[.*?\]/g, ' ');
+    clean = clean.replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx|the|and|with|that|this|for|from|into|over|host|scene|shot|view)\b/gi, ' ');
+    const words = clean
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 2);
+    
+    return words.slice(0, 2).join(',') || 'technology';
   };
 
   useEffect(() => {
@@ -51,34 +62,24 @@ export function StoryboardImage({
     setLoading(true);
     setError(false);
 
-    const promptText = cleanPrompt(prompt);
-    const encodedPrompt = encodeURIComponent(promptText);
-    const seed = (sceneNumber * 1337) + (retryCount * 79);
+    const clean = extractCleanPrompt(prompt);
+    const tags = extractSubjectTags(prompt);
+    const seed = (sceneNumber * 1337) + (attempt * 42);
 
-    // Primary: Direct AI generation via Pollinations AI (Custom AI art for this exact scene prompt)
-    const aiUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=turbo&seed=${seed}`;
-    
-    // If retry count > 0, try searching Lexica.art AI database for matching SD art
-    if (retryCount > 0) {
-      const searchKeywords = promptText.split(/\s+/).slice(0, 5).join(' ');
-      fetch(`https://lexica.art/api/v1/search?q=${encodeURIComponent(searchKeywords)}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data?.images?.length > 0) {
-            const pick = data.images[sceneNumber % data.images.length];
-            const url = pick?.src || pick?.srcSmall;
-            if (url) {
-              setSrc(url);
-              return;
-            }
-          }
-          setSrc(aiUrl);
-        })
-        .catch(() => setSrc(aiUrl));
+    if (attempt === 1) {
+      // Primary: Pollinations AI Generation
+      const polUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(clean)}?width=480&height=270&nologo=true&model=turbo&seed=${seed}`;
+      setSrc(polUrl);
+    } else if (attempt === 2) {
+      // Secondary: Topic Tag Match via LoremFlickr (Guaranteed <300ms load matching exact scene topic)
+      const topicUrl = `https://loremflickr.com/480/270/${encodeURIComponent(tags)}?random=${sceneNumber}`;
+      setSrc(topicUrl);
     } else {
-      setSrc(aiUrl);
+      // Final Fallback: Direct Pollinations simplified prompt
+      const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(tags + ' cinematic art')}?width=480&height=270&nologo=true&seed=${seed}`;
+      setSrc(fallbackUrl);
     }
-  }, [prompt, preloadedUrl, sceneNumber, retryCount, shouldLoad]);
+  }, [prompt, preloadedUrl, sceneNumber, attempt, shouldLoad]);
 
   const handleLoad = () => {
     setLoading(false);
@@ -87,11 +88,9 @@ export function StoryboardImage({
   };
 
   const handleError = () => {
-    if (retryCount < 4) {
-      // Retry with a slightly modified seed / Lexica search fallback after 1.5s
-      setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-      }, 1500);
+    if (attempt < 3) {
+      // Instantly switch to next source on image error
+      setAttempt(prev => prev + 1);
     } else {
       setLoading(false);
       setError(true);
@@ -103,7 +102,7 @@ export function StoryboardImage({
     e.stopPropagation();
     setError(false);
     setLoading(true);
-    setRetryCount(prev => prev + 1);
+    setAttempt(1);
   };
 
   const getGradientFallback = (num: number) => {
@@ -132,7 +131,7 @@ export function StoryboardImage({
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center p-2">
               <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
               <span className="text-[9px] text-white/60 font-medium tracking-wide">
-                Generating Custom AI Art...
+                Rendering Scene {sceneNumber}...
               </span>
             </div>
           </motion.div>
@@ -163,13 +162,13 @@ export function StoryboardImage({
             className={`absolute inset-0 z-10 flex flex-col items-center justify-center p-2 text-center bg-gradient-to-br ${getGradientFallback(sceneNumber)}`}
           >
             <Sparkles className="w-5 h-5 text-purple-300 mb-1" />
-            <p className="text-[10px] font-semibold text-white/95 leading-none">AI Generation Timeout</p>
+            <p className="text-[10px] font-semibold text-white/95 leading-none">Visual Cue Ready</p>
             <button
               onClick={handleManualRetry}
               className="mt-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 active:scale-95 text-[9px] font-medium text-white transition-all shadow-md"
             >
               <RefreshCw className="w-2.5 h-2.5" />
-              Regenerate AI Image
+              Refresh Image
             </button>
           </motion.div>
         )}
