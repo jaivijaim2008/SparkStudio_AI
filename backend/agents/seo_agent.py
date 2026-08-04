@@ -43,8 +43,20 @@ class SEOAgent(BaseAgent):
         try:
             parsed = self._parse_json_response(response)
             validated = SEOOutput(**parsed)
+            # Ensure keywords are copied to tags if tags is empty
+            if not validated.tags and validated.keywords:
+                validated.tags = validated.keywords
             self._logger.info("SEO generation completed successfully.")
             return validated.model_dump()
         except Exception as e:
-            self._logger.warning("Failed to parse LLM response, returning raw text fallback: %s", e)
-            return SEOOutput().model_dump()
+            self._logger.warning("Failed to parse LLM response, returning robust fallback: %s", e)
+            topic_clean = project_input.topic.title()
+            tag_clean = "".join(c for c in project_input.topic if c.isalnum())
+            return SEOOutput(
+                title=f"The Ultimate Guide to {topic_clean}!",
+                description=f"A complete, high-quality walkthrough on {topic_clean}. Learn the core concepts and practical steps to master it.",
+                keywords=[project_input.topic.lower(), "learning", "tutorial", "guide"],
+                tags=[project_input.topic.lower(), "tutorial", "learning", "guide"],
+                hashtags=[f"#{tag_clean}", "#learning", "#tutorial", "#guide"],
+                best_upload_time="Tuesday 3:00 PM EST"
+            ).model_dump()

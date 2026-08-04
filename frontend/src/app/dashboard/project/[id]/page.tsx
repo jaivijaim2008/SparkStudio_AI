@@ -197,8 +197,9 @@ export default function ProjectResultPage() {
 
   const getScenes = () => projectData?.storyboard?.scenes || [];
   const getSeoTitle = () => projectData?.seo?.title || 'Generating...';
-  const getSeoDescription = () => projectData?.seo?.description || '';
-  const getSeoTags = () => projectData?.seo?.tags || [];
+  const getSeoDescription = () => projectData?.seo?.description || 'Generating...';
+  const getSeoTags = () => (projectData?.seo?.tags?.length ? projectData.seo.tags : (projectData?.seo?.keywords || []));
+
   const getSeoHashtags = () => projectData?.seo?.hashtags || [];
   const getVoice = () => projectData?.voice || {};
   const getQuality = () => projectData?.quality || {};
