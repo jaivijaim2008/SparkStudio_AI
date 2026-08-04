@@ -773,14 +773,18 @@ async def generate_scene_image(body: ImageGenerateRequest):
         try:
             cf_url = f"https://api.cloudflare.com/client/v4/accounts/{cf_account}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning"
             headers = {"Authorization": f"Bearer {cf_token}", "Content-Type": "application/json"}
-            async with httpx.AsyncClient(timeout=8.0) as client:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 res = await client.post(cf_url, headers=headers, json={"prompt": enhanced_prompt})
                 if res.status_code == 200:
                     import base64
+                    # Cloudflare returns binary image bytes directly.
                     b64_img = base64.b64encode(res.content).decode("utf-8")
-                    return {"status": "success", "image_url": f"data:image/jpeg;base64,{b64_img}", "source": "cloudflare_workers_ai"}
+                    return {"status": "success", "image_url": f"data:image/png;base64,{b64_img}", "source": "cloudflare_workers_ai"}
+                else:
+                    logger.warning(f"Cloudflare returned non-200 code {res.status_code}: {res.text}")
         except Exception as e:
             logger.warning(f"Cloudflare Workers AI generation failed for scene {body.scene_number}: {e}")
+
 
     # Option 2: Hugging Face Inference API (if HF_TOKEN is configured)
     hf_token = getattr(settings, "HF_TOKEN", "")
