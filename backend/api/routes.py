@@ -740,3 +740,46 @@ async def razorpay_webhook(request: Request):
                 logger.error(f"Webhook plan upgrade failed: {e}")
 
     return {"status": "ok"}
+
+
+class ImageGenerateRequest(BaseModel):
+    prompt: str
+    scene_number: int = 1
+
+@router.post("/image/generate")
+async def generate_scene_image(body: ImageGenerateRequest):
+    """
+    Generate or search high-quality relevant scene AI image server-side.
+    Fast, reliable, zero CORS restrictions, zero client timeouts.
+    """
+    import urllib.parse
+    import re
+    import httpx
+
+    clean = re.sub(r'\[.*?\]', '', body.prompt or '')
+    clean = re.sub(r'\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b', '', clean, flags=re.IGNORECASE)
+    clean = clean.strip()[:200]
+
+    words = [w for w in re.sub(r'[^\w\s]', '', clean).split() if len(w) > 2 and w.lower() not in ('the', 'and', 'with', 'that', 'this', 'for', 'from', 'into', 'over', 'host', 'scene', 'shot', 'view')]
+    keywords = " ".join(words[:4]) or "cinematic digital art"
+
+    # 1. Server-side Lexica.art SD Search (No CORS issues server-side!)
+    try:
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            resp = await client.get(f"https://lexica.art/api/v1/search?q={urllib.parse.quote(keywords)}")
+            if resp.status_code == 200:
+                data = resp.json()
+                imgs = data.get("images", [])
+                if imgs:
+                    pick = imgs[body.scene_number % len(imgs)]
+                    url = pick.get("src") or pick.get("srcSmall")
+                    if url:
+                        return {"status": "success", "image_url": url, "source": "lexica"}
+    except Exception as e:
+        logger.warning(f"Server-side Lexica search failed for scene {body.scene_number}: {e}")
+
+    # 2. Server-side Pollinations AI fallback
+    seed = (body.scene_number * 1337)
+    pol_url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(clean or keywords)}?width=480&height=270&nologo=true&model=turbo&seed={seed}"
+
+    return {"status": "success", "image_url": pol_url, "source": "pollinations"}

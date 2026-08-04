@@ -3,12 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Sparkles } from 'lucide-react';
-
-declare global {
-  interface Window {
-    puter?: any;
-  }
-}
+import { apiUrl } from '@/lib/api-config';
 
 interface StoryboardImageProps {
   prompt: string;
@@ -34,26 +29,7 @@ export function StoryboardImage({
   const [src, setSrc] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [attempt, setAttempt] = useState(1);
-
-  const extractCleanPrompt = (text: string): string => {
-    if (!text) return 'digital art cinematic broadcast studio';
-    let clean = text.replace(/\[.*?\]/g, ' ');
-    clean = clean.replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b/gi, ' ');
-    return clean.replace(/["']/g, '').replace(/[\n\r]/g, ' ').trim().substring(0, 250);
-  };
-
-  const extractSubjectTags = (text: string): string => {
-    if (!text) return 'technology';
-    let clean = text.replace(/\[.*?\]/g, ' ');
-    clean = clean.replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx|the|and|with|that|this|for|from|into|over|host|scene|shot|view)\b/gi, ' ');
-    const words = clean
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(w => w.length > 2);
-    
-    return words.slice(0, 2).join(',') || 'technology';
-  };
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!prompt && !preloadedUrl) {
@@ -63,43 +39,35 @@ export function StoryboardImage({
       return;
     }
 
+    if (preloadedUrl) {
+      setSrc(preloadedUrl);
+      return;
+    }
+
     if (!shouldLoad) return;
 
     setLoading(true);
     setError(false);
 
-    const clean = extractCleanPrompt(prompt);
-    const tags = extractSubjectTags(prompt);
-    const seed = (sceneNumber * 1337) + (attempt * 42);
-    const polUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(clean)}?width=480&height=270&nologo=true&model=turbo&seed=${seed}`;
-
-    if (attempt === 1) {
-      // Primary: Puter.js AI Text-to-Image (Free, Unlimited, Browser-Native AI generation)
-      if (typeof window !== 'undefined' && window.puter?.ai?.txt2img) {
-        window.puter.ai.txt2img(clean)
-          .then((imgElement: any) => {
-            const url = imgElement?.src || (typeof imgElement === 'string' ? imgElement : '');
-            if (url) {
-              setSrc(url);
-            } else {
-              setSrc(polUrl);
-            }
-          })
-          .catch(() => {
-            setSrc(polUrl);
-          });
-      } else {
-        setSrc(polUrl);
-      }
-    } else if (attempt === 2) {
-      // Secondary: Pollinations AI Turbo Generation
-      setSrc(polUrl);
-    } else {
-      // Fallback: Scene Topic Match via LoremFlickr
-      const topicUrl = `https://loremflickr.com/480/270/${encodeURIComponent(tags)}?random=${sceneNumber}`;
-      setSrc(topicUrl);
-    }
-  }, [prompt, preloadedUrl, sceneNumber, attempt, shouldLoad]);
+    // Call server-side API proxy (zero CORS, zero client timeouts, fast response)
+    fetch(apiUrl('/api/image/generate'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, scene_number: sceneNumber }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data?.image_url) {
+          setSrc(data.image_url);
+        } else {
+          // Reliable fallback if server search empty
+          setSrc(`https://loremflickr.com/480/270/technology?random=${sceneNumber + retryCount}`);
+        }
+      })
+      .catch(() => {
+        setSrc(`https://loremflickr.com/480/270/technology?random=${sceneNumber + retryCount}`);
+      });
+  }, [prompt, preloadedUrl, sceneNumber, retryCount, shouldLoad]);
 
   const handleLoad = () => {
     setLoading(false);
@@ -108,8 +76,8 @@ export function StoryboardImage({
   };
 
   const handleError = () => {
-    if (attempt < 3) {
-      setAttempt(prev => prev + 1);
+    if (retryCount < 3) {
+      setRetryCount(prev => prev + 1);
     } else {
       setLoading(false);
       setError(true);
@@ -121,7 +89,7 @@ export function StoryboardImage({
     e.stopPropagation();
     setError(false);
     setLoading(true);
-    setAttempt(1);
+    setRetryCount(prev => prev + 1);
   };
 
   const getGradientFallback = (num: number) => {
@@ -150,7 +118,7 @@ export function StoryboardImage({
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center p-2">
               <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
               <span className="text-[9px] text-white/60 font-medium tracking-wide">
-                Rendering Puter.js AI Art...
+                Rendering AI Scene Visual...
               </span>
             </div>
           </motion.div>
