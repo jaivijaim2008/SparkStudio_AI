@@ -27,7 +27,8 @@ export function StoryboardImage({
   onLoadError = () => {}
 }: StoryboardImageProps) {
   const [src, setSrc] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [attempt, setAttempt] = useState(1);
 
   const cleanPrompt = (text: string): string => {
@@ -39,21 +40,22 @@ export function StoryboardImage({
 
   useEffect(() => {
     if (!prompt && !preloadedUrl) {
-      setLoading(false);
+      setHasError(true);
       onLoadError();
       return;
     }
 
     if (!shouldLoad) return;
 
-    setLoading(true);
+    setImageLoaded(false);
+    setHasError(false);
 
     const cleanedText = cleanPrompt(prompt);
     const encoded = encodeURIComponent(cleanedText + ' cinematic 8k photorealistic');
     const seed = (sceneNumber * 10007) + (attempt * 31);
+    const fallbackAiUrl = `https://image.pollinations.ai/prompt/${encoded}?width=480&height=270&nologo=true&seed=${seed}`;
 
     if (attempt === 1) {
-      // Primary: Server-side AI Image Generator Route
       fetch(apiUrl('/api/image/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -64,38 +66,38 @@ export function StoryboardImage({
           if (data?.image_url) {
             setSrc(data.image_url);
           } else {
-            setSrc(`https://image.pollinations.ai/prompt/${encoded}?width=480&height=270&nologo=true&seed=${seed}`);
+            setSrc(fallbackAiUrl);
           }
         })
         .catch(() => {
-          setSrc(`https://image.pollinations.ai/prompt/${encoded}?width=480&height=270&nologo=true&seed=${seed}`);
+          setSrc(fallbackAiUrl);
         });
     } else {
-      // Direct Pollinations AI Fallback with simplified prompt and new seed (100% AI Generated, 0% Random Photos)
-      setSrc(`https://image.pollinations.ai/prompt/${encoded}?width=480&height=270&nologo=true&seed=${seed}`);
+      setSrc(fallbackAiUrl);
     }
   }, [prompt, preloadedUrl, sceneNumber, attempt, shouldLoad]);
 
   const handleLoad = () => {
-    setLoading(false);
+    setImageLoaded(true);
+    setHasError(false);
     onLoadComplete();
   };
 
   const handleError = () => {
-    // Retry with alternate AI seed
-    if (attempt < 5) {
+    if (attempt < 4) {
       setTimeout(() => {
         setAttempt(prev => prev + 1);
-      }, 1000);
+      }, 1200);
     } else {
-      setLoading(false);
+      setHasError(true);
       onLoadError();
     }
   };
 
   const handleManualRefresh = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setLoading(true);
+    setImageLoaded(false);
+    setHasError(false);
     setAttempt(prev => prev + 1);
   };
 
@@ -112,9 +114,9 @@ export function StoryboardImage({
 
   return (
     <div className={`relative w-full h-full bg-black/40 rounded-lg overflow-hidden border border-white/10 group ${className}`}>
-      {/* Loading Skeleton */}
+      {/* Animated Gradient Placeholder Card — shown until image successfully loads */}
       <AnimatePresence>
-        {loading && (
+        {!imageLoaded && !hasError && (
           <motion.div
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.3 } }}
@@ -125,14 +127,14 @@ export function StoryboardImage({
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center p-2">
               <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
               <span className="text-[9px] text-white/60 font-medium tracking-wide">
-                Generating AI Scene Visual...
+                {attempt > 1 ? `Retrying AI Visual (${attempt})...` : 'Generating AI Scene Visual...'}
               </span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Rendered Image */}
+      {/* Actual Rendered Image — hidden until loaded to prevent browser broken image icons */}
       {src && (
         <img
           src={src}
@@ -140,10 +142,25 @@ export function StoryboardImage({
           onLoad={handleLoad}
           onError={handleError}
           className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out ${
-            loading ? 'opacity-0' : 'opacity-100'
+            imageLoaded ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
           loading="eager"
         />
+      )}
+
+      {/* Error Fallback Card */}
+      {hasError && (
+        <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-2 text-center bg-gradient-to-br ${getGradientFallback(sceneNumber)}`}>
+          <Sparkles className="w-4 h-4 text-purple-300 mb-1" />
+          <span className="text-[9px] text-white/70 font-medium">AI Visual Cue Ready</span>
+          <button
+            onClick={handleManualRefresh}
+            className="mt-1.5 flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 text-[8px] font-medium text-white transition-all shadow-md active:scale-95"
+          >
+            <RefreshCw className="w-2.5 h-2.5" />
+            Generate Scene Visual
+          </button>
+        </div>
       )}
 
       {/* Scene number tag */}
@@ -152,7 +169,7 @@ export function StoryboardImage({
       </div>
 
       {/* Hover Refresh Button */}
-      {!loading && (
+      {imageLoaded && (
         <button
           onClick={handleManualRefresh}
           className="absolute bottom-2 right-2 z-10 p-1.5 rounded-full bg-black/60 hover:bg-black/90 backdrop-blur-md border border-white/15 opacity-0 group-hover:opacity-100 transition-opacity text-white shadow-lg"
