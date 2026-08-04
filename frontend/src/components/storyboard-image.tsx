@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Sparkles } from 'lucide-react';
 
@@ -28,19 +28,14 @@ export function StoryboardImage({
   const [src, setSrc] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [fallbackTriggered, setFallbackTriggered] = useState(false);
-  const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const extractCleanKeywords = (text: string): string => {
-    if (!text) return 'digital art cinematic';
-    let clean = text.replace(/\[.*?\]/g, ' ');
-    clean = clean.replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b/gi, ' ');
-    const words = clean
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(w => w.length > 2 && !['the', 'and', 'with', 'that', 'this', 'for', 'from', 'into', 'over'].includes(w.toLowerCase()));
-    
-    return words.slice(0, 4).join(' ') || 'cinematic digital art';
+  const cleanPrompt = (text: string): string => {
+    if (!text) return 'digital art cinematic news broadcast studio';
+    let cleaned = text.replace(/\[.*?\]/g, ' '); // remove bracketed cues like [B-ROLL: ...]
+    cleaned = cleaned.replace(/\b(close-up|extreme|wide shot|medium shot|camera|zooming|panning|focus|angle|b-roll|sfx)\b/gi, ' ');
+    cleaned = cleaned.replace(/["']/g, '').replace(/[\n\r]/g, ' ').trim();
+    return cleaned.substring(0, 300);
   };
 
   useEffect(() => {
@@ -56,65 +51,59 @@ export function StoryboardImage({
     setLoading(true);
     setError(false);
 
-    const cleanQuery = extractCleanKeywords(prompt);
-    const seed = sceneNumber * 100 + 42;
-    const instantPicsumUrl = `https://picsum.photos/seed/${seed}/480/270`;
+    const promptText = cleanPrompt(prompt);
+    const encodedPrompt = encodeURIComponent(promptText);
+    const seed = (sceneNumber * 1337) + (retryCount * 79);
 
-    // 1.5s Watchdog: If current source takes >1500ms, instantly force-swap to Picsum CDN
-    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
-    watchdogTimerRef.current = setTimeout(() => {
-      setSrc(instantPicsumUrl);
-      setFallbackTriggered(true);
-    }, 1800);
-
-    if (fallbackTriggered) {
-      setSrc(instantPicsumUrl);
-      return;
-    }
-
-    // Try Lexica AI image search first
-    const encodedQuery = encodeURIComponent(cleanQuery);
-    fetch(`https://lexica.art/api/v1/search?q=${encodedQuery}`)
-      .then(r => r.json())
-      .then(data => {
-        if (data?.images?.length > 0) {
-          const pick = data.images[sceneNumber % data.images.length];
-          const url = pick?.src || pick?.srcSmall;
-          if (url) {
-            setSrc(url);
-            return;
+    // Primary: Direct AI generation via Pollinations AI (Custom AI art for this exact scene prompt)
+    const aiUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=turbo&seed=${seed}`;
+    
+    // If retry count > 0, try searching Lexica.art AI database for matching SD art
+    if (retryCount > 0) {
+      const searchKeywords = promptText.split(/\s+/).slice(0, 5).join(' ');
+      fetch(`https://lexica.art/api/v1/search?q=${encodeURIComponent(searchKeywords)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data?.images?.length > 0) {
+            const pick = data.images[sceneNumber % data.images.length];
+            const url = pick?.src || pick?.srcSmall;
+            if (url) {
+              setSrc(url);
+              return;
+            }
           }
-        }
-        setSrc(instantPicsumUrl);
-      })
-      .catch(() => {
-        setSrc(instantPicsumUrl);
-      });
-
-    return () => {
-      if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
-    };
-  }, [prompt, preloadedUrl, sceneNumber, shouldLoad, fallbackTriggered]);
+          setSrc(aiUrl);
+        })
+        .catch(() => setSrc(aiUrl));
+    } else {
+      setSrc(aiUrl);
+    }
+  }, [prompt, preloadedUrl, sceneNumber, retryCount, shouldLoad]);
 
   const handleLoad = () => {
-    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
     setLoading(false);
     setError(false);
     onLoadComplete();
   };
 
   const handleError = () => {
-    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
-    const seed = sceneNumber * 100 + 99;
-    setSrc(`https://picsum.photos/seed/${seed}/480/270`);
-    setFallbackTriggered(true);
+    if (retryCount < 4) {
+      // Retry with a slightly modified seed / Lexica search fallback after 1.5s
+      setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 1500);
+    } else {
+      setLoading(false);
+      setError(true);
+      onLoadError();
+    }
   };
 
   const handleManualRetry = (e: React.MouseEvent) => {
     e.stopPropagation();
     setError(false);
     setLoading(true);
-    setFallbackTriggered(false);
+    setRetryCount(prev => prev + 1);
   };
 
   const getGradientFallback = (num: number) => {
@@ -143,7 +132,7 @@ export function StoryboardImage({
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center p-2">
               <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
               <span className="text-[9px] text-white/60 font-medium tracking-wide">
-                Rendering Scene {sceneNumber}...
+                Generating Custom AI Art...
               </span>
             </div>
           </motion.div>
@@ -174,13 +163,13 @@ export function StoryboardImage({
             className={`absolute inset-0 z-10 flex flex-col items-center justify-center p-2 text-center bg-gradient-to-br ${getGradientFallback(sceneNumber)}`}
           >
             <Sparkles className="w-5 h-5 text-purple-300 mb-1" />
-            <p className="text-[10px] font-semibold text-white/95 leading-none">Visual Cue Ready</p>
+            <p className="text-[10px] font-semibold text-white/95 leading-none">AI Generation Timeout</p>
             <button
               onClick={handleManualRetry}
               className="mt-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 active:scale-95 text-[9px] font-medium text-white transition-all shadow-md"
             >
               <RefreshCw className="w-2.5 h-2.5" />
-              Refresh Image
+              Regenerate AI Image
             </button>
           </motion.div>
         )}
