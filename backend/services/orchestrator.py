@@ -122,6 +122,9 @@ class PipelineOrchestrator:
             except Exception as e:
                 logger.error(f"Error in {agent.agent_name}: {str(e)}")
                 yield json.dumps({'agent': agent.agent_name, 'status': 'error', 'data': {}, 'error_message': str(e)})
+                if agent.agent_name in ['research', 'script']:
+                    raise e
+
 
         # Phase 2: Sequential to respect Groq rate limits (Storyboard, Thumbnail, SEO, Subtitle, Voice)
         middle_agents = self.agents[2:7]
