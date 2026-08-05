@@ -42,7 +42,9 @@ export default function ProjectResultPage() {
       const len = projectData.storyboard.scenes.length;
       setImageStatuses(prev => {
         if (prev.length === len) return prev;
-        return new Array(len).fill('pending');
+        return projectData.storyboard.scenes.map((scene: any) => 
+          scene.image_url ? 'completed' : 'pending'
+        );
       });
     }
   }, [projectData]);
@@ -528,6 +530,8 @@ export default function ProjectResultPage() {
                   <div key={idx} className="glass-card p-6 flex flex-col md:flex-row gap-6">
                     <div className="w-full md:w-48 aspect-video relative">
                       <StoryboardImage
+                        projectId={projectId}
+                        initialImageUrl={scene.image_url}
                         prompt={scene.image_prompt || scene.visual_description}
                         sceneNumber={scene.scene_number || idx + 1}
                         alt={`Scene ${scene.scene_number || idx + 1}`}

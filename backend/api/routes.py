@@ -749,6 +749,7 @@ async def razorpay_webhook(request: Request):
 
 
 class ImageGenerateRequest(BaseModel):
+    project_id: Optional[str] = None
     prompt: str
     scene_number: int
 
@@ -757,6 +758,7 @@ async def generate_scene_image(body: ImageGenerateRequest):
     """
     Generate high-adherence AI image matching the scene content.
     Supports Cloudflare Workers AI, Hugging Face FLUX.1, and Pollinations FLUX.
+    Persists generated URLs to database when project_id is provided.
     """
     import urllib.parse
     import re
@@ -771,6 +773,8 @@ async def generate_scene_image(body: ImageGenerateRequest):
         clean = f"cinematic film scene {body.scene_number}"
 
     enhanced_prompt = f"{clean}, cinematic photorealistic 8k, movie scene stills, vivid details"
+    image_url = None
+    source = None
 
     # Option 1: Cloudflare Workers AI (if configured)
     cf_account = getattr(settings, "CLOUDFLARE_ACCOUNT_ID", "")
@@ -785,43 +789,80 @@ async def generate_scene_image(body: ImageGenerateRequest):
                 if res.status_code == 200:
                     import base64
                     b64_img = base64.b64encode(res.content).decode("utf-8")
-                    return {"status": "success", "image_url": f"data:image/png;base64,{b64_img}", "source": "cloudflare_workers_ai"}
+                    image_url = f"data:image/png;base64,{b64_img}"
+                    source = "cloudflare_workers_ai"
                 else:
                     logger.warning(f"Cloudflare returned non-200 code {res.status_code}: {res.text}")
         except Exception as e:
             logger.warning(f"Cloudflare Workers AI generation failed for scene {body.scene_number}: {e}")
 
-    # Option 2: Hugging Face FLUX (if configured)
-    hf_token = getattr(settings, "HF_API_KEY", "")
-    if hf_token:
-        try:
-            from huggingface_hub import InferenceClient
-            import io
-            import base64
-            import time
-            client = InferenceClient(api_key=hf_token)
-            
-            for attempt in range(1, 4):
-                try:
-                    image = client.text_to_image(enhanced_prompt, model="black-forest-labs/FLUX.1-schnell", timeout=25.0)
-                    img_byte_arr = io.BytesIO()
-                    image.save(img_byte_arr, format='PNG')
-                    b64_img = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
-                    return {"status": "success", "image_url": f"data:image/png;base64,{b64_img}", "source": "huggingface_flux"}
-                except Exception as e:
-                    logger.warning(f"Hugging Face SDK attempt {attempt}/3 failed for scene {body.scene_number}: {e}")
-                    if attempt < 3:
-                        time.sleep(3.0)
-                    else:
-                        raise e
-        except Exception as e:
-            logger.error(f"Hugging Face SDK generation exhausted for scene {body.scene_number}: {e}")
+    # Option 2: Hugging Face FLUX (if configured and CF didn't run)
+    if not image_url:
+        hf_token = getattr(settings, "HF_API_KEY", "")
+        if hf_token:
+            try:
+                from huggingface_hub import InferenceClient
+                import io
+                import base64
+                import time
+                client = InferenceClient(api_key=hf_token)
+                
+                for attempt in range(1, 4):
+                    try:
+                        image = client.text_to_image(enhanced_prompt, model="black-forest-labs/FLUX.1-schnell", timeout=25.0)
+                        img_byte_arr = io.BytesIO()
+                        image.save(img_byte_arr, format='PNG')
+                        b64_img = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
+                        image_url = f"data:image/png;base64,{b64_img}"
+                        source = "huggingface_flux"
+                        break
+                    except Exception as e:
+                        logger.warning(f"Hugging Face SDK attempt {attempt}/3 failed for scene {body.scene_number}: {e}")
+                        if attempt < 3:
+                            time.sleep(3.0)
+                        else:
+                            raise e
+            except Exception as e:
+                logger.error(f"Hugging Face SDK generation exhausted for scene {body.scene_number}: {e}")
 
-    # Option 3: Pollinations FLUX Model (Sanitized fallback to prevent browser rate limits)
-    encoded = urllib.parse.quote(enhanced_prompt)
-    pol_url = f"https://image.pollinations.ai/prompt/{encoded}?nologo=true&private=true&safe=true"
+    # Option 3: Pollinations FLUX Model (Sanitized fallback)
+    if not image_url:
+        encoded = urllib.parse.quote(enhanced_prompt)
+        image_url = f"https://image.pollinations.ai/prompt/{encoded}?nologo=true&private=true&safe=true"
+        source = "pollinations_flux"
 
-    return {"status": "success", "image_url": pol_url, "source": "pollinations_flux"}
+    # Persist the image URL in the project storyboard database payload
+    if body.project_id and image_url:
+        # Update local fake_db cache
+        if body.project_id in fake_db and "storyboard" in fake_db[body.project_id]:
+            storyboard = fake_db[body.project_id]["storyboard"]
+            scenes = storyboard.get("scenes", [])
+            for scene in scenes:
+                if scene.get("scene_number") == body.scene_number:
+                    scene["image_url"] = image_url
+                    break
+        
+        # Update Supabase
+        if supabase:
+            try:
+                res = supabase.table("projects").select("storyboard").eq("id", body.project_id).execute()
+                if res.data:
+                    storyboard = res.data[0].get("storyboard") or {}
+                    scenes = storyboard.get("scenes", [])
+                    updated = False
+                    for scene in scenes:
+                        if scene.get("scene_number") == body.scene_number:
+                            scene["image_url"] = image_url
+                            updated = True
+                            break
+                    if updated:
+                        supabase.table("projects").update({"storyboard": storyboard}).eq("id", body.project_id).execute()
+                        logger.info(f"Persisted generated image URL for project {body.project_id} scene {body.scene_number} to Supabase.")
+            except Exception as db_err:
+                logger.warning(f"Failed to persist generated image URL to Supabase: {db_err}")
+
+    return {"status": "success", "image_url": image_url, "source": source}
+
 
 
 

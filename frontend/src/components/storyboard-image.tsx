@@ -7,6 +7,8 @@ import { RefreshCw, Image as ImageIcon, Clock } from 'lucide-react';
 import { apiUrl } from '@/lib/api';
 
 interface StoryboardImageProps {
+  projectId?: string;
+  initialImageUrl?: string;
   prompt: string;
   sceneNumber: number;
   alt: string;
@@ -17,6 +19,8 @@ interface StoryboardImageProps {
 }
 
 export function StoryboardImage({ 
+  projectId = "",
+  initialImageUrl = "",
   prompt, 
   sceneNumber, 
   alt, 
@@ -39,8 +43,19 @@ export function StoryboardImage({
     }
   }, [prompt]);
 
+  // Set initial URL if provided
+  useEffect(() => {
+    if (initialImageUrl) {
+      setSrc(initialImageUrl);
+      setLoading(false);
+      setError(false);
+      onLoadComplete();
+    }
+  }, [initialImageUrl]);
+
   // Re-generate URL when prompt, retryCount, or shouldLoad changes
   useEffect(() => {
+    if (initialImageUrl) return;
     if (!shouldLoad || !prompt) return;
 
     setLoading(true);
@@ -62,7 +77,11 @@ export function StoryboardImage({
       fetch(apiUrl('/api/image/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, scene_number: sceneNumber }),
+        body: JSON.stringify({ 
+          project_id: projectId,
+          prompt, 
+          scene_number: sceneNumber 
+        }),
       })
         .then(r => r.json())
         .then(data => {
@@ -78,7 +97,8 @@ export function StoryboardImage({
     } else {
       setSrc(fallbackUrl);
     }
-  }, [prompt, sceneNumber, retryCount, shouldLoad]);
+  }, [prompt, sceneNumber, retryCount, shouldLoad, initialImageUrl, projectId]);
+
 
 
   const handleLoad = () => {
