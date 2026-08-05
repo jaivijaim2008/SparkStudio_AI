@@ -795,7 +795,7 @@ async def generate_scene_image(body: ImageGenerateRequest):
     hf_token = getattr(settings, "HF_API_KEY", "")
     if hf_token:
         try:
-            hf_url = "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell"
+            hf_url = "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0"
             headers = {"Authorization": f"Bearer {hf_token}", "Content-Type": "application/json"}
             async with httpx.AsyncClient(timeout=25.0) as client:
                 res = await client.post(hf_url, headers=headers, json={"inputs": enhanced_prompt})
@@ -879,7 +879,7 @@ async def test_hf_config():
             "message": "Hugging Face credentials (HF_API_KEY) are not configured in environment variables."
         }
         
-    hf_url = "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell"
+    hf_url = "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0"
     headers = {
         "Authorization": f"Bearer {hf_token}",
         "Content-Type": "application/json"
