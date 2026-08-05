@@ -913,4 +913,16 @@ async def test_hf_config():
         }
 
 
+@router.get("/commit/hash")
+async def get_commit_hash():
+    """
+    Returns a static version string to verify deployment status.
+    """
+    return {
+        "version": "v4-flux-auto",
+        "commit": "6c50002"
+    }
+
+
+
 
