@@ -51,7 +51,7 @@ export default function ProjectResultPage() {
 
   // Queue coordinator: stagger image requests by 3000ms to prevent Pollinations rate limiting
   useEffect(() => {
-    if (imageStatuses.length === 0) return;
+    if (imageStatuses.length === 0 || activeTab !== 'storyboard') return;
     
     const nextIdx = imageStatuses.findIndex(s => s === 'pending');
     if (nextIdx !== -1 && scheduledIndexRef.current !== nextIdx) {
@@ -70,7 +70,8 @@ export default function ProjectResultPage() {
         scheduledIndexRef.current = null;
       };
     }
-  }, [imageStatuses]);
+  }, [imageStatuses, activeTab]);
+
 
   // Elapsed timer
   useEffect(() => {
