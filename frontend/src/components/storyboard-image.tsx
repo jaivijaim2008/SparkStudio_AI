@@ -44,19 +44,21 @@ export function StoryboardImage({
     }
   }, [prompt]);
 
-  // Set initial URL if provided and not retried
+  // Set initial URL if provided, not retried, and not a legacy Pollinations URL
+  const isLegacyPollinations = initialImageUrl && initialImageUrl.includes('pollinations.ai');
+
   useEffect(() => {
-    if (initialImageUrl && !hasRetried) {
+    if (initialImageUrl && !hasRetried && !isLegacyPollinations) {
       setSrc(initialImageUrl);
       setLoading(false);
       setError(false);
       onLoadComplete();
     }
-  }, [initialImageUrl, hasRetried]);
+  }, [initialImageUrl, hasRetried, isLegacyPollinations]);
 
   // Re-generate URL when prompt, retryCount, or shouldLoad changes
   useEffect(() => {
-    if (initialImageUrl && !hasRetried) return;
+    if (initialImageUrl && !hasRetried && !isLegacyPollinations) return;
     if (!shouldLoad || !prompt) return;
 
     setLoading(true);
@@ -98,7 +100,7 @@ export function StoryboardImage({
     } else {
       setSrc(fallbackUrl);
     }
-  }, [prompt, sceneNumber, retryCount, shouldLoad, initialImageUrl, projectId, hasRetried]);
+  }, [prompt, sceneNumber, retryCount, shouldLoad, initialImageUrl, projectId, hasRetried, isLegacyPollinations]);
 
 
 

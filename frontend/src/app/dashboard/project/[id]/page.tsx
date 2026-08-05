@@ -43,7 +43,7 @@ export default function ProjectResultPage() {
       setImageStatuses(prev => {
         if (prev.length === len) return prev;
         return projectData.storyboard.scenes.map((scene: any) => 
-          scene.image_url ? 'completed' : 'pending'
+          (scene.image_url && !scene.image_url.includes('pollinations.ai')) ? 'completed' : 'pending'
         );
       });
     }
