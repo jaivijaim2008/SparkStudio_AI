@@ -779,8 +779,9 @@ async def generate_scene_image(body: ImageGenerateRequest):
         try:
             cf_url = f"https://api.cloudflare.com/client/v4/accounts/{cf_account}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning"
             headers = {"Authorization": f"Bearer {cf_token}", "Content-Type": "application/json"}
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient(timeout=20.0) as client:
                 res = await client.post(cf_url, headers=headers, json={"prompt": enhanced_prompt})
+
                 if res.status_code == 200:
                     import base64
                     b64_img = base64.b64encode(res.content).decode("utf-8")

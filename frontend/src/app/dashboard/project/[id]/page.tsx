@@ -49,13 +49,18 @@ export default function ProjectResultPage() {
 
   const scheduledIndexRef = useRef<number | null>(null);
 
-  // Queue coordinator: stagger image requests by 3000ms to prevent Pollinations rate limiting
+  // Queue coordinator: load images strictly one-by-one (wait for current to finish before loading next)
   useEffect(() => {
     if (imageStatuses.length === 0 || activeTab !== 'storyboard') return;
+    
+    // Check if there is any active image currently in the 'loading' state
+    const hasActiveLoading = imageStatuses.some(s => s === 'loading');
+    if (hasActiveLoading) return; // Wait until it changes to 'completed' or 'failed'
     
     const nextIdx = imageStatuses.findIndex(s => s === 'pending');
     if (nextIdx !== -1 && scheduledIndexRef.current !== nextIdx) {
       scheduledIndexRef.current = nextIdx;
+      // Stagger slightly (1000ms) to allow connection handshakes to settle
       const timer = setTimeout(() => {
         setImageStatuses(prev => {
           const next = [...prev];
@@ -63,7 +68,7 @@ export default function ProjectResultPage() {
           return next;
         });
         scheduledIndexRef.current = null;
-      }, 3000); // 3000ms spacing between triggers
+      }, 1000);
       
       return () => {
         clearTimeout(timer);
@@ -71,6 +76,7 @@ export default function ProjectResultPage() {
       };
     }
   }, [imageStatuses, activeTab]);
+
 
 
   // Elapsed timer
