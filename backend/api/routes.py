@@ -795,18 +795,17 @@ async def generate_scene_image(body: ImageGenerateRequest):
     hf_token = getattr(settings, "HF_API_KEY", "")
     if hf_token:
         try:
-            hf_url = "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell:auto"
-            headers = {"Authorization": f"Bearer {hf_token}", "Content-Type": "application/json"}
-            async with httpx.AsyncClient(timeout=25.0) as client:
-                res = await client.post(hf_url, headers=headers, json={"inputs": enhanced_prompt})
-                if res.status_code == 200:
-                    import base64
-                    b64_img = base64.b64encode(res.content).decode("utf-8")
-                    return {"status": "success", "image_url": f"data:image/png;base64,{b64_img}", "source": "huggingface_flux"}
-                else:
-                    logger.warning(f"Hugging Face returned non-200 code {res.status_code}: {res.text}")
+            from huggingface_hub import InferenceClient
+            import io
+            import base64
+            client = InferenceClient(api_key=hf_token)
+            image = client.text_to_image(enhanced_prompt, model="black-forest-labs/FLUX.1-schnell")
+            img_byte_arr = io.BytesIO()
+            image.save(img_byte_arr, format='PNG')
+            b64_img = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
+            return {"status": "success", "image_url": f"data:image/png;base64,{b64_img}", "source": "huggingface_flux"}
         except Exception as e:
-            logger.warning(f"Hugging Face generation failed: {e}")
+            logger.warning(f"Hugging Face SDK generation failed for scene {body.scene_number}: {e}")
 
     # Option 3: Pollinations FLUX Model
     encoded = urllib.parse.quote(enhanced_prompt)
@@ -879,37 +878,24 @@ async def test_hf_config():
             "message": "Hugging Face credentials (HF_API_KEY) are not configured in environment variables."
         }
         
-    hf_url = "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell:auto"
-    headers = {
-        "Authorization": f"Bearer {hf_token}",
-        "Content-Type": "application/json"
-    }
-    
-    import httpx
     try:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            res = await client.post(hf_url, headers=headers, json={"inputs": "A simple test image"})
-            if res.status_code == 200:
-                return {
-                    "status": "success",
-                    "message": "Hugging Face Inference API is configured correctly and working!",
-                    "status_code": res.status_code,
-                    "image_bytes_length": len(res.content)
-                }
-            else:
-                try:
-                    detail = res.json()
-                except Exception:
-                    detail = res.text[:200]
-                return {
-                    "status": "error",
-                    "message": f"Hugging Face API returned status code {res.status_code}",
-                    "response": detail
-                }
+        from huggingface_hub import InferenceClient
+        client = InferenceClient(api_key=hf_token)
+        image = client.text_to_image("A simple test image", model="black-forest-labs/FLUX.1-schnell")
+        
+        import io
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format='PNG')
+        
+        return {
+            "status": "success",
+            "message": "Hugging Face Inference API is configured correctly and working!",
+            "image_bytes_length": len(img_byte_arr.getvalue())
+        }
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Failed to connect to Hugging Face API: {str(e)}"
+            "message": f"Hugging Face API returned an error: {str(e)}"
         }
 
 
@@ -919,8 +905,8 @@ async def get_commit_hash():
     Returns a static version string to verify deployment status.
     """
     return {
-        "version": "v4-flux-auto",
-        "commit": "6c50002"
+        "version": "v5-flux-sdk",
+        "commit": "latest"
     }
 
 
