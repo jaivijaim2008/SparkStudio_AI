@@ -33,6 +33,7 @@ export function StoryboardImage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [hasRetried, setHasRetried] = useState(false);
 
   // Set early error state if prompt is completely missing
   useEffect(() => {
@@ -43,19 +44,19 @@ export function StoryboardImage({
     }
   }, [prompt]);
 
-  // Set initial URL if provided
+  // Set initial URL if provided and not retried
   useEffect(() => {
-    if (initialImageUrl) {
+    if (initialImageUrl && !hasRetried) {
       setSrc(initialImageUrl);
       setLoading(false);
       setError(false);
       onLoadComplete();
     }
-  }, [initialImageUrl]);
+  }, [initialImageUrl, hasRetried]);
 
   // Re-generate URL when prompt, retryCount, or shouldLoad changes
   useEffect(() => {
-    if (initialImageUrl) return;
+    if (initialImageUrl && !hasRetried) return;
     if (!shouldLoad || !prompt) return;
 
     setLoading(true);
@@ -97,7 +98,7 @@ export function StoryboardImage({
     } else {
       setSrc(fallbackUrl);
     }
-  }, [prompt, sceneNumber, retryCount, shouldLoad, initialImageUrl, projectId]);
+  }, [prompt, sceneNumber, retryCount, shouldLoad, initialImageUrl, projectId, hasRetried]);
 
 
 
@@ -124,6 +125,7 @@ export function StoryboardImage({
     e.stopPropagation();
     setError(false);
     setLoading(true);
+    setHasRetried(true);
     setRetryCount(0);
   };
 
