@@ -791,10 +791,77 @@ async def generate_scene_image(body: ImageGenerateRequest):
         except Exception as e:
             logger.warning(f"Cloudflare Workers AI generation failed for scene {body.scene_number}: {e}")
 
-    # Option 2: Pollinations FLUX Model
+    # Option 2: Hugging Face FLUX (if configured)
+    hf_token = getattr(settings, "HF_API_KEY", "")
+    if hf_token:
+        try:
+            hf_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
+            headers = {"Authorization": f"Bearer {hf_token}", "Content-Type": "application/json"}
+            async with httpx.AsyncClient(timeout=25.0) as client:
+                res = await client.post(hf_url, headers=headers, json={"inputs": enhanced_prompt})
+                if res.status_code == 200:
+                    import base64
+                    b64_img = base64.b64encode(res.content).decode("utf-8")
+                    return {"status": "success", "image_url": f"data:image/png;base64,{b64_img}", "source": "huggingface_flux"}
+                else:
+                    logger.warning(f"Hugging Face returned non-200 code {res.status_code}: {res.text}")
+        except Exception as e:
+            logger.warning(f"Hugging Face generation failed: {e}")
+
+    # Option 3: Pollinations FLUX Model
     encoded = urllib.parse.quote(enhanced_prompt)
     seed = (body.scene_number * 10007) + (abs(hash(clean)) % 50000)
     pol_url = f"https://image.pollinations.ai/prompt/{encoded}?width=480&height=270&nologo=true&model=flux&seed={seed}"
 
     return {"status": "success", "image_url": pol_url, "source": "pollinations_flux"}
+
+
+@router.get("/cloudflare/test")
+async def test_cloudflare_config():
+    """
+    Diagnostic endpoint to test Cloudflare Workers AI configuration and credentials.
+    """
+    cf_account = getattr(settings, "CLOUDFLARE_ACCOUNT_ID", "")
+    cf_token = getattr(settings, "CLOUDFLARE_API_TOKEN", "")
+    
+    if not cf_account or not cf_token:
+        return {
+            "status": "error",
+            "message": "Cloudflare credentials are not configured in environment variables.",
+            "account_id_present": bool(cf_account),
+            "api_token_present": bool(cf_token)
+        }
+        
+    cf_url = f"https://api.cloudflare.com/client/v4/accounts/{cf_account}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning"
+    headers = {
+        "Authorization": f"Bearer {cf_token}",
+        "Content-Type": "application/json"
+    }
+    
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.post(cf_url, headers=headers, json={"prompt": "A simple test image"})
+            if res.status_code == 200:
+                return {
+                    "status": "success",
+                    "message": "Cloudflare Workers AI is configured correctly and working!",
+                    "status_code": res.status_code
+                }
+            else:
+                try:
+                    detail = res.json()
+                except Exception:
+                    detail = res.text[:200]
+                return {
+                    "status": "error",
+                    "message": f"Cloudflare API returned status code {res.status_code}",
+                    "response": detail
+                }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to connect to Cloudflare API: {str(e)}"
+        }
+
 

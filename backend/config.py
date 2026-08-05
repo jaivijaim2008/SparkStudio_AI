@@ -61,8 +61,13 @@ class Settings(BaseSettings):
         default="",
         description="Cloudflare API Token for Workers AI image generation",
     )
+    HF_API_KEY: str = Field(
+        default="",
+        description="Hugging Face API key (optional fallback for image generation)",
+    )
 
     # ── Supabase (optional, for future persistence) ─────────────────────
+
 
     SUPABASE_URL: str = Field(
         default="",
