@@ -53,7 +53,17 @@ class Settings(BaseSettings):
         description="OpenRouter API key (required when LLM_PROVIDER=openrouter)",
     )
 
+    CLOUDFLARE_ACCOUNT_ID: str = Field(
+        default="",
+        description="Cloudflare Account ID for Workers AI image generation",
+    )
+    CLOUDFLARE_API_TOKEN: str = Field(
+        default="",
+        description="Cloudflare API Token for Workers AI image generation",
+    )
+
     # ── Supabase (optional, for future persistence) ─────────────────────
+
     SUPABASE_URL: str = Field(
         default="",
         description="Supabase project URL",

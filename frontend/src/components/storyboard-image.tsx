@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Image as ImageIcon, Clock } from 'lucide-react';
+import { apiUrl } from '@/lib/api';
 
 interface StoryboardImageProps {
   prompt: string;
@@ -54,10 +56,30 @@ export function StoryboardImage({
     const encodedPrompt = encodeURIComponent(sanitizedPrompt.substring(0, 450));
     const seed = (sceneNumber * 1337) + (retryCount * 42);
     const cacheBuster = retryCount > 0 ? `&r=${retryCount}` : '';
-    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=turbo&seed=${seed}${cacheBuster}`;
+    const fallbackUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=480&height=270&nologo=true&model=turbo&seed=${seed}${cacheBuster}`;
     
-    setSrc(url);
+    if (retryCount === 0) {
+      fetch(apiUrl('/api/image/generate'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, scene_number: sceneNumber }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data?.image_url) {
+            setSrc(data.image_url);
+          } else {
+            setSrc(fallbackUrl);
+          }
+        })
+        .catch(() => {
+          setSrc(fallbackUrl);
+        });
+    } else {
+      setSrc(fallbackUrl);
+    }
   }, [prompt, sceneNumber, retryCount, shouldLoad]);
+
 
   const handleLoad = () => {
     setLoading(false);
