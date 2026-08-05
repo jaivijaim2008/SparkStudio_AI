@@ -865,3 +865,52 @@ async def test_cloudflare_config():
         }
 
 
+
+@router.get("/hf/test")
+async def test_hf_config():
+    """
+    Diagnostic endpoint to test Hugging Face Inference API configuration and credentials.
+    """
+    hf_token = getattr(settings, "HF_API_KEY", "")
+    
+    if not hf_token:
+        return {
+            "status": "error",
+            "message": "Hugging Face credentials (HF_API_KEY) are not configured in environment variables."
+        }
+        
+    hf_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
+    headers = {
+        "Authorization": f"Bearer {hf_token}",
+        "Content-Type": "application/json"
+    }
+    
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            res = await client.post(hf_url, headers=headers, json={"inputs": "A simple test image"})
+            if res.status_code == 200:
+                return {
+                    "status": "success",
+                    "message": "Hugging Face Inference API is configured correctly and working!",
+                    "status_code": res.status_code,
+                    "image_bytes_length": len(res.content)
+                }
+            else:
+                try:
+                    detail = res.json()
+                except Exception:
+                    detail = res.text[:200]
+                return {
+                    "status": "error",
+                    "message": f"Hugging Face API returned status code {res.status_code}",
+                    "response": detail
+                }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to connect to Hugging Face API: {str(e)}"
+        }
+
+
+
