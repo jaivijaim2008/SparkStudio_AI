@@ -798,21 +798,31 @@ async def generate_scene_image(body: ImageGenerateRequest):
             from huggingface_hub import InferenceClient
             import io
             import base64
+            import time
             client = InferenceClient(api_key=hf_token)
-            image = client.text_to_image(enhanced_prompt, model="black-forest-labs/FLUX.1-schnell")
-            img_byte_arr = io.BytesIO()
-            image.save(img_byte_arr, format='PNG')
-            b64_img = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
-            return {"status": "success", "image_url": f"data:image/png;base64,{b64_img}", "source": "huggingface_flux"}
+            
+            for attempt in range(1, 4):
+                try:
+                    image = client.text_to_image(enhanced_prompt, model="black-forest-labs/FLUX.1-schnell", timeout=25.0)
+                    img_byte_arr = io.BytesIO()
+                    image.save(img_byte_arr, format='PNG')
+                    b64_img = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
+                    return {"status": "success", "image_url": f"data:image/png;base64,{b64_img}", "source": "huggingface_flux"}
+                except Exception as e:
+                    logger.warning(f"Hugging Face SDK attempt {attempt}/3 failed for scene {body.scene_number}: {e}")
+                    if attempt < 3:
+                        time.sleep(3.0)
+                    else:
+                        raise e
         except Exception as e:
-            logger.warning(f"Hugging Face SDK generation failed for scene {body.scene_number}: {e}")
+            logger.error(f"Hugging Face SDK generation exhausted for scene {body.scene_number}: {e}")
 
-    # Option 3: Pollinations FLUX Model
+    # Option 3: Pollinations FLUX Model (Sanitized fallback to prevent browser rate limits)
     encoded = urllib.parse.quote(enhanced_prompt)
-    seed = (body.scene_number * 10007) + (abs(hash(clean)) % 50000)
-    pol_url = f"https://image.pollinations.ai/prompt/{encoded}?width=480&height=270&nologo=true&model=flux&seed={seed}"
+    pol_url = f"https://image.pollinations.ai/prompt/{encoded}?nologo=true&private=true&safe=true"
 
     return {"status": "success", "image_url": pol_url, "source": "pollinations_flux"}
+
 
 
 @router.get("/cloudflare/test")
