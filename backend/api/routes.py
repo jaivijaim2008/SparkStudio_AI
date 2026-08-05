@@ -777,8 +777,8 @@ async def generate_scene_image(body: ImageGenerateRequest):
     source = None
 
     # Option 1: Cloudflare Workers AI (if configured)
-    cf_account = getattr(settings, "CLOUDFLARE_ACCOUNT_ID", "")
-    cf_token = getattr(settings, "CLOUDFLARE_API_TOKEN", "")
+    cf_account = getattr(settings, "CLOUDFLARE_ACCOUNT_ID", "").strip()
+    cf_token = getattr(settings, "CLOUDFLARE_API_TOKEN", "").strip()
     if cf_account and cf_token:
         try:
             cf_url = f"https://api.cloudflare.com/client/v4/accounts/{cf_account}/ai/run/@cf/bytedance/stable-diffusion-xl-lightning"
@@ -798,7 +798,7 @@ async def generate_scene_image(body: ImageGenerateRequest):
 
     # Option 2: Hugging Face FLUX (if configured and CF didn't run)
     if not image_url:
-        hf_token = getattr(settings, "HF_API_KEY", "")
+        hf_token = getattr(settings, "HF_API_KEY", "").strip()
         if hf_token:
             try:
                 from huggingface_hub import InferenceClient
@@ -871,8 +871,8 @@ async def test_cloudflare_config():
     """
     Diagnostic endpoint to test Cloudflare Workers AI configuration and credentials.
     """
-    cf_account = getattr(settings, "CLOUDFLARE_ACCOUNT_ID", "")
-    cf_token = getattr(settings, "CLOUDFLARE_API_TOKEN", "")
+    cf_account = getattr(settings, "CLOUDFLARE_ACCOUNT_ID", "").strip()
+    cf_token = getattr(settings, "CLOUDFLARE_API_TOKEN", "").strip()
     
     if not cf_account or not cf_token:
         return {
@@ -921,7 +921,7 @@ async def test_hf_config():
     """
     Diagnostic endpoint to test Hugging Face Inference API configuration and credentials.
     """
-    hf_token = getattr(settings, "HF_API_KEY", "")
+    hf_token = getattr(settings, "HF_API_KEY", "").strip()
     
     if not hf_token:
         return {
