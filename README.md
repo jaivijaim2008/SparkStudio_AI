@@ -263,22 +263,6 @@ Add all backend environment variables in the Render dashboard.
 
 ---
 
-## 🏆 Team — GPU Melters
-
-Built with 🔥 by **Team GPU Melters**
-
-| Name | Role | Register No. |
-|---|---|---|
-| **Jai Vijai M** *(Team Lead)* | Full-Stack AI Engineer & Harness Architect | 210425243091 |
-| **Bharath Priyan M** | Frontend & UI/UX | 210425243039 |
-| **Shri Harish N** | Backend & Agent Development | 2104251040932 |
-| **Arunkumar I** | Database & Deployment | 210425243028 |
-
-**Department of Artificial Intelligence & Data Science**
-Chennai Institute of Technology
-
----
-
 ## 📊 Performance
 
 | Metric | Value |
@@ -294,7 +278,7 @@ Chennai Institute of Technology
 
 ## 📄 License
 
-MIT License — Created by Team GPU Melters.
+MIT License.
 
 ---
 
