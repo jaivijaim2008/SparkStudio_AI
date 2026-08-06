@@ -6,7 +6,6 @@
 
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Vercel-black?style=for-the-badge&logo=vercel)](https://spark-studio-ai.vercel.app)
 [![Backend](https://img.shields.io/badge/⚙️_Backend-Render-46E3B7?style=for-the-badge&logo=render)](https://sparkstudio-backend.onrender.com)
-[![PRISM Hackathon](https://img.shields.io/badge/🏆_PRISM_Hackathon-Theme_3-blueviolet?style=for-the-badge)](https://github.com/jaivijaim2008/SparkStudio_AI)
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat-square&logo=next.js)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi)
@@ -20,8 +19,6 @@
 > **"One topic. Five specialized AI agents. Complete production kit in 2 minutes."**
 
 SparkStudio AI is a **production-grade, domain-specific Agent Harness** engineered for the Creator Economy. It orchestrates 5 specialized AI agents — Researcher, Scriptwriter, Storyboarder, Subtitle Generator, and Quality Auditor — into a single cohesive pipeline that eliminates the 10-hour manual video production workflow.
-
-Built for **PRISM: Agentic AI Hackathon — Theme 3: Architecting Next-Gen Agent Harnesses**.
 
 </div>
 
@@ -83,7 +80,7 @@ SparkStudio AI fills this gap by providing a **structured, stateful multi-agent 
 
 ---
 
-## ✅ Mapping to PRISM Theme 3 Evaluation Criteria
+## ✅ Agent Harness Design & Key Evaluation Criteria
 
 | Criteria | Weight | SparkStudio Implementation |
 |---|---|---|
@@ -268,7 +265,7 @@ Add all backend environment variables in the Render dashboard.
 
 ## 🏆 Team — GPU Melters
 
-Built with 🔥 for **PRISM: Agentic AI Hackathon — Theme 3**
+Built with 🔥 by **Team GPU Melters**
 
 | Name | Role | Register No. |
 |---|---|---|
@@ -297,7 +294,7 @@ Chennai Institute of Technology
 
 ## 📄 License
 
-MIT License — Built for the **PRISM: Agentic AI Hackathon 2026** by Team GPU Melters.
+MIT License — Created by Team GPU Melters.
 
 ---
 
