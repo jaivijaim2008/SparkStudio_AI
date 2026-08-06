@@ -276,9 +276,6 @@ Add all backend environment variables in the Render dashboard.
 
 ---
 
-## 📄 License
-
-MIT License.
 
 ---
 
