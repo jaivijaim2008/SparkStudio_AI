@@ -791,7 +791,7 @@ export default function NewProject() {
           </AnimatePresence>
 
           {/* Details Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-3">
               <label className="text-sm font-medium">Target Audience</label>
               <input
@@ -816,6 +816,33 @@ export default function NewProject() {
                 <option value="Controversial" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Controversial / Clicky</option>
                 <option value="Inspirational" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Inspirational</option>
               </select>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-medium flex justify-between items-center">
+                <span>Video Duration</span>
+                <span className="text-purple-400 font-mono font-bold bg-purple-500/10 px-2.5 py-0.5 rounded text-xs">
+                  {formData.video_length >= 60 
+                    ? `${Math.floor(formData.video_length / 60)}m ${formData.video_length % 60}s` 
+                    : `${formData.video_length}s`}
+                </span>
+              </label>
+              <div className="flex items-center gap-3 pt-2.5">
+                <input
+                  type="range"
+                  min="15"
+                  max="1200"
+                  step="15"
+                  value={formData.video_length}
+                  onChange={(e) => setFormData({ ...formData, video_length: parseInt(e.target.value) })}
+                  className="w-full h-2 bg-slate-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                />
+              </div>
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>15s (Shorts)</span>
+                <span>5m</span>
+                <span>20m (Long)</span>
+              </div>
             </div>
           </div>
 
